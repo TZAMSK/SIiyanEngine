@@ -1,8 +1,18 @@
-use crate::scene::shape::shape::ShapeBehavior;
-use crate::scene::shape::shape::{Shape, ShapeType};
+use crate::scene::shape::ShapeBehavior;
+use crate::scene::shape::{Shape, ShapeType};
 
 pub struct Cube {
     pub shape: Shape,
+}
+
+impl Cube {
+    pub fn new(name: &str, position: glm::Vec3, color: glm::Vec4) -> Self {
+        let mut cube = Self {
+            shape: Shape::new(name.to_string(), position, color),
+        };
+        cube.rebuild_mesh();
+        cube
+    }
 }
 
 impl ShapeBehavior for Cube {
