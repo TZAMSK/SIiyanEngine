@@ -1,6 +1,6 @@
 use crate::scene::shape::round::RoundProperties;
-use crate::scene::shape::shape::ShapeBehavior;
-use crate::scene::shape::shape::{Shape, ShapeType};
+use crate::scene::shape::ShapeBehavior;
+use crate::scene::shape::{Shape, ShapeType};
 
 pub struct Circle {
     pub shape: Shape,
