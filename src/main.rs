@@ -1,6 +1,7 @@
 mod app;
 mod renderer;
 mod scene;
+mod ui;
 
 use winit::event_loop::EventLoop;
 

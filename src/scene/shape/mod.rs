@@ -1,4 +1,4 @@
-use wgpu::{BufferAddress, VertexAttribute, VertexBufferLayout, VertexFormat, VertexStepMode};
+use wgpu::{BufferAddress, VertexBufferLayout, VertexStepMode};
 
 mod round;
 pub mod three_dimensions;
@@ -56,7 +56,7 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    fn vertex_count(&self) -> usize {
+    pub fn vertex_count(&self) -> usize {
         self.vertices.len()
     }
 

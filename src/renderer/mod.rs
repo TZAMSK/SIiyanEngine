@@ -3,14 +3,18 @@ mod pipeline;
 use std::sync::Arc;
 
 use wgpu::{
-    Device, DeviceDescriptor, Instance, PowerPreference, PresentMode, Queue, RenderPipeline,
-    RequestAdapterOptions, Surface, SurfaceColorSpace, SurfaceConfiguration, TextureUsages,
+    hal::SurfaceError, Color, CommandEncoderDescriptor, Device, DeviceDescriptor, Instance, LoadOp,
+    Operations, PowerPreference, PresentMode, Queue, RenderPassColorAttachment,
+    RenderPassDescriptor, RenderPipeline, RequestAdapterOptions, StoreOp, Surface,
+    SurfaceColorSpace, SurfaceConfiguration, TextureFormat, TextureUsages, TextureViewDescriptor,
 };
 use winit::window::Window;
 
 use crate::{
+    app::app_state::AppState,
     renderer::pipeline::RenderPipelineBuilder,
     scene::shape::{Mesh, Shape},
+    ui::UIManager,
 };
 
 pub struct Renderer {
@@ -93,5 +97,106 @@ impl Renderer {
             config,
             pipeline,
         })
+    }
+
+    pub fn surface_format(&self) -> TextureFormat {
+        self.config.format
+    }
+
+    pub fn resize(&mut self, width: u32, height: u32) {
+        if width > 0 && height > 0 {
+            self.config.width = width;
+            self.config.height = height;
+            self.surface.configure(&self.device, &self.config);
+        }
+    }
+
+    pub fn render(
+        &mut self,
+        ui: &mut UIManager,
+        state: &mut AppState,
+        window: &Window,
+        shapes: &Vec<Shape>,
+    ) -> Result<(), SurfaceError> {
+        let output = match self.surface.get_current_texture() {
+            wgpu::CurrentSurfaceTexture::Success(surface_texture) => surface_texture,
+            wgpu::CurrentSurfaceTexture::Suboptimal(surface_texture) => surface_texture,
+            wgpu::CurrentSurfaceTexture::Timeout
+            | wgpu::CurrentSurfaceTexture::Occluded
+            | wgpu::CurrentSurfaceTexture::Validation => {
+                return Ok(());
+            }
+            wgpu::CurrentSurfaceTexture::Outdated => {
+                self.surface.configure(&self.device, &self.config);
+                return Ok(());
+            }
+            wgpu::CurrentSurfaceTexture::Lost => {
+                return Err(SurfaceError::Lost);
+            }
+        };
+
+        let view = output
+            .texture
+            .create_view(&TextureViewDescriptor::default());
+
+        let mut encoder = self
+            .device
+            .create_command_encoder(&CommandEncoderDescriptor {
+                label: Some("Render Encoder"),
+            });
+
+        // First: Render 3D content with Clear to set the background
+        // This creates the base layer that everything else renders on top of
+        {
+            let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
+                label: Some("3D Render Pass"),
+                color_attachments: &[Some(RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: Operations {
+                        // Clear sets the background color for the entire surface
+                        load: LoadOp::Clear(Color {
+                            r: 0.2,
+                            g: 0.2,
+                            b: 0.25,
+                            a: 1.0,
+                        }),
+                        store: StoreOp::Store,
+                    },
+                    depth_slice: None,
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+                multiview_mask: None,
+            });
+
+            render_pass.set_pipeline(&self.pipeline);
+
+            for shape in shapes {
+                if let (Some(buf), num_vertices) =
+                    (&shape.mesh.vertex_buffer, &shape.mesh.vertex_count())
+                {
+                    render_pass.set_vertex_buffer(0, buf.slice(..));
+                    render_pass.draw(0..*num_vertices as u32, 0..1);
+                }
+            }
+        }
+
+        // Second: Render UI on top with Load to preserve the 3D content underneath
+        // The transparent CentralPanel in ViewportPanel allows the 2D triangle to show through
+        ui.render(
+            &self.device,
+            &self.queue,
+            &mut encoder,
+            window,
+            &view,
+            state,
+        );
+
+        self.queue.submit(std::iter::once(encoder.finish()));
+        self.queue.present(output);
+
+        Ok(())
     }
 }
