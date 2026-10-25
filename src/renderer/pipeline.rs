@@ -12,6 +12,7 @@ pub struct RenderPipelineBuilder<'a> {
     shader: Option<String>,
     vertex_layout: Option<VertexBufferLayout<'static>>,
     binding_group_layout: Vec<wgpu::BindGroupLayout>,
+    topology: PrimitiveTopology,
 }
 
 impl<'a> RenderPipelineBuilder<'a> {
@@ -22,6 +23,7 @@ impl<'a> RenderPipelineBuilder<'a> {
             shader: None,
             vertex_layout: None,
             binding_group_layout: Vec::new(),
+            topology: PrimitiveTopology::TriangleList,
         }
     }
 
@@ -37,6 +39,11 @@ impl<'a> RenderPipelineBuilder<'a> {
 
     pub fn with_binding_group_layout(mut self, layout: &wgpu::BindGroupLayout) -> Self {
         self.binding_group_layout.push(layout.clone());
+        self
+    }
+
+    pub fn with_topology(mut self, topology: PrimitiveTopology) -> Self {
+        self.topology = topology;
         self
     }
 
@@ -84,7 +91,7 @@ impl<'a> RenderPipelineBuilder<'a> {
                     compilation_options: PipelineCompilationOptions::default(),
                 }),
                 primitive: PrimitiveState {
-                    topology: PrimitiveTopology::TriangleList,
+                    topology: self.topology,
                     strip_index_format: None,
                     front_face: FrontFace::Ccw,
                     cull_mode: Some(Face::Back),

@@ -1,3 +1,4 @@
+mod grid_axis_renderer;
 mod pipeline;
 mod viewport_renderer;
 
@@ -13,7 +14,10 @@ use winit::window::Window;
 
 use crate::{
     app::app_state::AppState,
-    renderer::{pipeline::RenderPipelineBuilder, viewport_renderer::ViewportRenderer},
+    renderer::{
+        grid_axis_renderer::GridAxisRenderer, pipeline::RenderPipelineBuilder,
+        viewport_renderer::ViewportRenderer,
+    },
     scene::{
         camera::CameraManager,
         shape::{Mesh, Shape},
@@ -28,6 +32,8 @@ pub struct Renderer {
     pub config: SurfaceConfiguration,
     pipeline: Option<RenderPipeline>,
     viewport: ViewportRenderer,
+    grid_pipeline: Option<RenderPipeline>,
+    grid: GridAxisRenderer,
 }
 
 fn upload_shapes(shapes: &mut [Shape], device: &Device) {
@@ -96,6 +102,8 @@ impl Renderer {
             size.height.max(1),
         );
 
+        let grid = GridAxisRenderer::new(&device);
+
         Ok(Self {
             surface,
             device,
@@ -103,6 +111,8 @@ impl Renderer {
             config,
             pipeline: None,
             viewport,
+            grid_pipeline: None,
+            grid,
         })
     }
 
@@ -126,7 +136,7 @@ impl Renderer {
         shapes: &Vec<Shape>,
         camera: &CameraManager,
     ) -> Result<(), SurfaceError> {
-        let Some(pipeline) = &self.pipeline else {
+        let (Some(pipeline), Some(grid_pipeline)) = (&self.pipeline, &self.grid_pipeline) else {
             return Ok(());
         };
 
@@ -187,6 +197,10 @@ impl Renderer {
                 multiview_mask: None,
             });
 
+            render_pass.set_pipeline(grid_pipeline);
+            render_pass.set_bind_group(0, &camera.camera_bind_group, &[]);
+            self.grid.draw(&mut render_pass);
+
             render_pass.set_pipeline(pipeline);
             render_pass.set_bind_group(0, &camera.camera_bind_group, &[]);
 
@@ -223,6 +237,16 @@ impl Renderer {
                 .with_binding_group_layout(&camera.camera_bind_group_layout)
                 .build()
                 .expect("Couldn't create pipeline"),
+        );
+
+        self.grid_pipeline = Some(
+            RenderPipelineBuilder::new(&self.device, self.config.format)
+                .with_shader(include_str!("shader.wgsl"))
+                .with_vertex_layout(GridAxisRenderer::vertex_layout())
+                .with_binding_group_layout(&camera.camera_bind_group_layout)
+                .with_topology(wgpu::PrimitiveTopology::LineList)
+                .build()
+                .expect("Couldn't create grid_pipeline"),
         );
     }
 

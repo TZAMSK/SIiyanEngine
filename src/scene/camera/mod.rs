@@ -1,6 +1,3 @@
-use std::sync::Arc;
-
-use egui::Window;
 use wgpu::util::DeviceExt;
 
 mod view;
@@ -36,8 +33,8 @@ impl CameraManager {
             target: glm::Vec3::new(0.0, 0.0, 0.0),
             up: glm::Vec3::new(0.0, 1.0, 0.0),
             aspect: width as f32 / height as f32,
-            fov: 45.0,
-            znear: 1.0,
+            fov: 45.0_f32.to_radians(),
+            znear: 0.1,
             zfar: 1000.0,
         };
 
@@ -87,9 +84,9 @@ impl CameraManager {
 impl Camera {
     fn build_view_projection_matrix(&self) -> glm::Mat4 {
         let view = glm::look_at(&self.position, &self.target, &self.up);
-        let proj = glm::perspective(self.fov, self.aspect, self.znear, self.zfar);
+        let proj = glm::perspective(self.aspect, self.fov, self.znear, self.zfar);
 
-        return opengl_to_wgpu_matrix() * view * proj;
+        opengl_to_wgpu_matrix() * proj * view
     }
 }
 
