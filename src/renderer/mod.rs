@@ -1,7 +1,9 @@
 mod pipeline;
+mod viewport_renderer;
 
 use std::sync::Arc;
 
+use egui::viewport;
 use wgpu::{
     hal::SurfaceError, Color, CommandEncoderDescriptor, Device, DeviceDescriptor, Instance, LoadOp,
     Operations, PowerPreference, PresentMode, Queue, RenderPassColorAttachment,
@@ -12,7 +14,7 @@ use winit::window::Window;
 
 use crate::{
     app::app_state::AppState,
-    renderer::pipeline::RenderPipelineBuilder,
+    renderer::{pipeline::RenderPipelineBuilder, viewport_renderer::ViewportRenderer},
     scene::shape::{Mesh, Shape},
     ui::UIManager,
 };
@@ -23,6 +25,7 @@ pub struct Renderer {
     pub queue: Queue,
     pub config: SurfaceConfiguration,
     pipeline: RenderPipeline,
+    viewport: ViewportRenderer,
 }
 
 fn upload_shapes(shapes: &mut [Shape], device: &Device) {
@@ -90,12 +93,20 @@ impl Renderer {
             .build()
             .expect("Couldn't create pipeline");
 
+        let viewport = ViewportRenderer::new(
+            &device,
+            surface_format,
+            size.width.max(1),
+            size.height.max(1),
+        );
+
         Ok(Self {
             surface,
             device,
             queue,
             config,
             pipeline,
+            viewport,
         })
     }
 
@@ -145,27 +156,31 @@ impl Renderer {
                 label: Some("Render Encoder"),
             });
 
-        // First: Render 3D content with Clear to set the background
-        // This creates the base layer that everything else renders on top of
         {
             let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
                 label: Some("3D Render Pass"),
                 color_attachments: &[Some(RenderPassColorAttachment {
-                    view: &view,
+                    view: &self.viewport.view,
                     resolve_target: None,
                     ops: Operations {
-                        // Clear sets the background color for the entire surface
                         load: LoadOp::Clear(Color {
-                            r: 0.8,
-                            g: 0.2,
-                            b: 0.25,
+                            r: 0.04,
+                            g: 0.04,
+                            b: 0.04,
                             a: 1.0,
                         }),
                         store: StoreOp::Store,
                     },
                     depth_slice: None,
                 })],
-                depth_stencil_attachment: None,
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &self.viewport.depth_view,
+                    depth_ops: Some(Operations {
+                        load: LoadOp::Clear(1.0),
+                        store: StoreOp::Store,
+                    }),
+                    stencil_ops: None,
+                }),
                 timestamp_writes: None,
                 occlusion_query_set: None,
                 multiview_mask: None,
@@ -183,8 +198,6 @@ impl Renderer {
             }
         }
 
-        // Second: Render UI on top with Load to preserve the 3D content underneath
-        // The transparent CentralPanel in ViewportPanel allows the 2D triangle to show through
         ui.render(
             &self.device,
             &self.queue,
@@ -198,5 +211,9 @@ impl Renderer {
         self.queue.present(output);
 
         Ok(())
+    }
+
+    pub fn viewport_view(&self) -> &wgpu::TextureView {
+        &self.viewport.view
     }
 }

@@ -3,6 +3,7 @@ mod inspector;
 mod menu;
 mod scene;
 mod toolbar;
+mod viewport;
 
 pub use console::ConsolePanel;
 use egui::{vec2, Align2, Color32, FontId, Sense};
@@ -10,6 +11,7 @@ pub use inspector::InspectorPanel;
 pub use menu::MenuPanel;
 pub use scene::ScenePanel;
 pub use toolbar::ToolbarPanel;
+pub use viewport::ViewportPanel;
 
 pub fn title_panel(ui: &mut egui::Ui, title: &str) {
     let (rect, _) = ui.allocate_exact_size(vec2(ui.available_width(), 18.0), Sense::hover());

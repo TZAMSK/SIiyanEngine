@@ -19,9 +19,11 @@ pub struct UIManager {
     platform: EguiWinitState,
     components: UIComponents,
     egui_renderer: EguiRenderer,
+    viewport_texture_id: Option<egui::TextureId>,
 }
 
 struct UIComponents {
+    viewport: panels::ViewportPanel,
     inspector: panels::InspectorPanel,
     scene: panels::ScenePanel,
     console: panels::ConsolePanel,
@@ -30,7 +32,12 @@ struct UIComponents {
 }
 
 impl UIManager {
-    pub fn new(window: &Window, device: &Device, surface_format: TextureFormat) -> Self {
+    pub fn new(
+        window: &Window,
+        device: &Device,
+        surface_format: TextureFormat,
+        viewport_view: &wgpu::TextureView,
+    ) -> Self {
         let ctx = Context::default();
         let platform = EguiWinitState::new(
             ctx.clone(),
@@ -41,7 +48,7 @@ impl UIManager {
             None,
         );
 
-        let egui_renderer = EguiRenderer::new(
+        let mut egui_renderer = EguiRenderer::new(
             device,
             surface_format,
             RendererOptions {
@@ -49,10 +56,17 @@ impl UIManager {
             },
         );
 
+        let viewport_texture_id = Some(egui_renderer.register_native_texture(
+            device,
+            viewport_view,
+            wgpu::FilterMode::Linear,
+        ));
+
         Self {
             ctx,
             platform,
             components: UIComponents {
+                viewport: panels::ViewportPanel::new(),
                 inspector: panels::InspectorPanel::new(),
                 scene: panels::ScenePanel::new(),
                 console: panels::ConsolePanel::new(),
@@ -60,6 +74,7 @@ impl UIManager {
                 toolbar: panels::ToolbarPanel::new(),
             },
             egui_renderer,
+            viewport_texture_id,
         }
     }
 
@@ -73,6 +88,10 @@ impl UIManager {
         self.components.console.show(ui, state);
         self.components.scene.show(ui, state);
         self.components.inspector.show(ui, state);
+
+        if let Some(texture_id) = self.viewport_texture_id {
+            self.components.viewport.show(ui, Some(texture_id));
+        }
     }
 
     pub fn render(
@@ -149,5 +168,9 @@ impl UIManager {
 
     pub fn ctx(&self) -> &Context {
         &self.ctx
+    }
+
+    pub fn set_viewport_texture(&mut self, texture_id: egui::TextureId) {
+        self.viewport_texture_id = Some(texture_id)
     }
 }

@@ -48,7 +48,12 @@ impl Application {
         let window = Arc::new(window);
         let scene = self.scene.as_mut().expect("Scene must be set before init");
         let renderer = Renderer::new(&window, &mut scene.shapes).await?;
-        let ui = UIManager::new(&window, &renderer.device, renderer.surface_format());
+        let ui = UIManager::new(
+            &window,
+            &renderer.device,
+            renderer.surface_format(),
+            renderer.viewport_view(),
+        );
 
         self.renderer = Some(renderer);
         self.window = Some(window);

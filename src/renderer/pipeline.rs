@@ -1,8 +1,9 @@
 use wgpu::{
-    BlendState, ColorTargetState, ColorWrites, Device, Face, FragmentState, FrontFace,
-    MultisampleState, PipelineCompilationOptions, PipelineLayoutDescriptor, PolygonMode,
-    PrimitiveState, PrimitiveTopology, RenderPipeline, RenderPipelineDescriptor,
-    ShaderModuleDescriptor, ShaderSource, TextureFormat, VertexBufferLayout, VertexState,
+    BlendState, ColorTargetState, ColorWrites, CompareFunction, DepthBiasState, Device, Face,
+    FragmentState, FrontFace, MultisampleState, PipelineCompilationOptions,
+    PipelineLayoutDescriptor, PolygonMode, PrimitiveState, PrimitiveTopology, RenderPipeline,
+    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, StencilState, TextureFormat,
+    VertexBufferLayout, VertexState,
 };
 
 pub struct RenderPipelineBuilder<'a> {
@@ -81,7 +82,13 @@ impl<'a> RenderPipelineBuilder<'a> {
                     unclipped_depth: false,
                     conservative: false,
                 },
-                depth_stencil: None,
+                depth_stencil: Some(wgpu::DepthStencilState {
+                    format: TextureFormat::Depth32Float,
+                    depth_write_enabled: Some(true),
+                    depth_compare: Some(CompareFunction::Less),
+                    stencil: StencilState::default(),
+                    bias: DepthBiasState::default(),
+                }),
                 multisample: MultisampleState {
                     count: 1,
                     mask: !0,

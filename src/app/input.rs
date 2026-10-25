@@ -45,4 +45,6 @@ impl Input {
         }
         false
     }
+
+    pub fn mouseLocalTWorldSpace() {}
 }
