@@ -1,5 +1,5 @@
+mod dimensions;
 mod panels;
-mod window;
 
 use egui_wgpu::wgpu::{
     CommandEncoder, Device, LoadOp, Operations, Queue, RenderPass, RenderPassColorAttachment,
@@ -22,8 +22,11 @@ pub struct UIManager {
 }
 
 struct UIComponents {
-    viewport: panels::ViewportPanel,
-    properties: panels::PropertiesPanel,
+    inspector: panels::InspectorPanel,
+    scene: panels::ScenePanel,
+    console: panels::ConsolePanel,
+    menu_bar: panels::MenuPanel,
+    toolbar: panels::ToolbarPanel,
 }
 
 impl UIManager {
@@ -50,8 +53,11 @@ impl UIManager {
             ctx,
             platform,
             components: UIComponents {
-                viewport: panels::ViewportPanel::new(),
-                properties: panels::PropertiesPanel::new(),
+                inspector: panels::InspectorPanel::new(),
+                scene: panels::ScenePanel::new(),
+                console: panels::ConsolePanel::new(),
+                menu_bar: panels::MenuPanel::new(),
+                toolbar: panels::ToolbarPanel::new(),
             },
             egui_renderer,
         }
@@ -62,8 +68,11 @@ impl UIManager {
     }
 
     pub fn render_ui(&mut self, ui: &mut egui::Ui, state: &mut AppState) {
-        self.components.viewport.show(ui);
-        self.components.properties.show(ui, state);
+        self.components.menu_bar.show(ui, state);
+        self.components.toolbar.show(ui, state);
+        self.components.console.show(ui, state);
+        self.components.scene.show(ui, state);
+        self.components.inspector.show(ui, state);
     }
 
     pub fn render(

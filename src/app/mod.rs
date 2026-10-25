@@ -1,7 +1,9 @@
 pub mod app_state;
+mod input;
 
 use std::sync::Arc;
 
+use input::Input;
 use wgpu::hal::SurfaceError;
 use winit::{application::ApplicationHandler, window::Window};
 
@@ -18,6 +20,7 @@ pub struct Application {
     renderer: Option<Renderer>,
     state: AppState,
     pub ui: Option<UIManager>,
+    input: Input,
 }
 
 impl Application {
@@ -37,6 +40,7 @@ impl Application {
             renderer: None,
             state: AppState::default(),
             ui: None,
+            input: Input::default(),
         }
     }
 
@@ -56,9 +60,9 @@ impl Application {
 
 impl ApplicationHandler for Application {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        let window = event_loop
-            .create_window(Window::default_attributes())
-            .unwrap();
+        let attr = Window::default_attributes()
+            .with_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
+        let window = event_loop.create_window(attr).unwrap();
 
         pollster::block_on(self.init(window)).unwrap();
     }
@@ -75,6 +79,11 @@ impl ApplicationHandler for Application {
             self.ui.as_mut(),
         ) {
             if ui.handle_event(window, &event) {
+                return;
+            }
+
+            if self.input.handle_event(window, &event) {
+                event_loop.exit();
                 return;
             }
 

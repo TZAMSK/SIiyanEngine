@@ -156,7 +156,7 @@ impl Renderer {
                     ops: Operations {
                         // Clear sets the background color for the entire surface
                         load: LoadOp::Clear(Color {
-                            r: 0.2,
+                            r: 0.8,
                             g: 0.2,
                             b: 0.25,
                             a: 1.0,
