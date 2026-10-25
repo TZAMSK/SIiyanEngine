@@ -1,3 +1,4 @@
+pub mod camera;
 pub mod shape;
 
 use crate::scene::shape::Shape;

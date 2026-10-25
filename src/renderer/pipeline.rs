@@ -11,6 +11,7 @@ pub struct RenderPipelineBuilder<'a> {
     format: TextureFormat,
     shader: Option<String>,
     vertex_layout: Option<VertexBufferLayout<'static>>,
+    binding_group_layout: Vec<wgpu::BindGroupLayout>,
 }
 
 impl<'a> RenderPipelineBuilder<'a> {
@@ -20,6 +21,7 @@ impl<'a> RenderPipelineBuilder<'a> {
             format,
             shader: None,
             vertex_layout: None,
+            binding_group_layout: Vec::new(),
         }
     }
 
@@ -30,6 +32,11 @@ impl<'a> RenderPipelineBuilder<'a> {
 
     pub fn with_vertex_layout(mut self, layout: VertexBufferLayout<'static>) -> Self {
         self.vertex_layout = Some(layout);
+        self
+    }
+
+    pub fn with_binding_group_layout(mut self, layout: &wgpu::BindGroupLayout) -> Self {
+        self.binding_group_layout.push(layout.clone());
         self
     }
 
@@ -44,11 +51,14 @@ impl<'a> RenderPipelineBuilder<'a> {
             source: ShaderSource::Wgsl(shader.into()),
         });
 
+        let layout_refs: Vec<Option<&wgpu::BindGroupLayout>> =
+            self.binding_group_layout.iter().map(Some).collect();
+
         let pipeline_layout = self
             .device
             .create_pipeline_layout(&PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[],
+                bind_group_layouts: &layout_refs,
                 immediate_size: 0,
             });
 

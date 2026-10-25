@@ -10,7 +10,7 @@ use winit::{application::ApplicationHandler, window::Window};
 use crate::{
     app::app_state::AppState,
     renderer::Renderer,
-    scene::{shape::three_dimensions::cube::Cube, Scene},
+    scene::{camera::CameraManager, shape::three_dimensions::cube::Cube, Scene},
     ui::UIManager,
 };
 
@@ -20,6 +20,7 @@ pub struct Application {
     renderer: Option<Renderer>,
     state: AppState,
     pub ui: Option<UIManager>,
+    camera: Option<CameraManager>,
     input: Input,
 }
 
@@ -34,12 +35,14 @@ impl Application {
         let scene = Scene {
             shapes: vec![cube.shape],
         };
+
         Self {
             scene: Some(scene),
             window: None,
             renderer: None,
             state: AppState::default(),
             ui: None,
+            camera: None,
             input: Input::default(),
         }
     }
@@ -47,7 +50,17 @@ impl Application {
     pub async fn init(&mut self, window: Window) -> anyhow::Result<()> {
         let window = Arc::new(window);
         let scene = self.scene.as_mut().expect("Scene must be set before init");
-        let renderer = Renderer::new(&window, &mut scene.shapes).await?;
+
+        let mut renderer = Renderer::new(&window, &mut scene.shapes).await?;
+
+        let camera = CameraManager::new(
+            &renderer.device,
+            window.inner_size().width,
+            window.inner_size().height,
+        );
+
+        renderer.build_pipeline(&camera);
+
         let ui = UIManager::new(
             &window,
             &renderer.device,
@@ -57,6 +70,9 @@ impl Application {
 
         self.renderer = Some(renderer);
         self.window = Some(window);
+
+        self.camera = Some(camera);
+
         self.ui = Some(ui);
 
         Ok(())
@@ -105,6 +121,7 @@ impl ApplicationHandler for Application {
                         &mut self.state,
                         window,
                         &self.scene.as_ref().unwrap().shapes,
+                        &self.camera.as_ref().unwrap(),
                     ) {
                         Ok(_) => {}
                         Err(SurfaceError::Lost | SurfaceError::Outdated) => {

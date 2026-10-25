@@ -3,7 +3,6 @@ mod viewport_renderer;
 
 use std::sync::Arc;
 
-use egui::viewport;
 use wgpu::{
     hal::SurfaceError, Color, CommandEncoderDescriptor, Device, DeviceDescriptor, Instance, LoadOp,
     Operations, PowerPreference, PresentMode, Queue, RenderPassColorAttachment,
@@ -15,7 +14,10 @@ use winit::window::Window;
 use crate::{
     app::app_state::AppState,
     renderer::{pipeline::RenderPipelineBuilder, viewport_renderer::ViewportRenderer},
-    scene::shape::{Mesh, Shape},
+    scene::{
+        camera::CameraManager,
+        shape::{Mesh, Shape},
+    },
     ui::UIManager,
 };
 
@@ -24,7 +26,7 @@ pub struct Renderer {
     pub device: Device,
     pub queue: Queue,
     pub config: SurfaceConfiguration,
-    pipeline: RenderPipeline,
+    pipeline: Option<RenderPipeline>,
     viewport: ViewportRenderer,
 }
 
@@ -87,12 +89,6 @@ impl Renderer {
         upload_shapes(shapes, &device);
         write_shapes(shapes, &queue);
 
-        let pipeline = RenderPipelineBuilder::new(&device, surface_format)
-            .with_shader(include_str!("shader.wgsl"))
-            .with_vertex_layout(Mesh::vertex_layout())
-            .build()
-            .expect("Couldn't create pipeline");
-
         let viewport = ViewportRenderer::new(
             &device,
             surface_format,
@@ -105,7 +101,7 @@ impl Renderer {
             device,
             queue,
             config,
-            pipeline,
+            pipeline: None,
             viewport,
         })
     }
@@ -128,7 +124,12 @@ impl Renderer {
         state: &mut AppState,
         window: &Window,
         shapes: &Vec<Shape>,
+        camera: &CameraManager,
     ) -> Result<(), SurfaceError> {
+        let Some(pipeline) = &self.pipeline else {
+            return Ok(());
+        };
+
         let output = match self.surface.get_current_texture() {
             wgpu::CurrentSurfaceTexture::Success(surface_texture) => surface_texture,
             wgpu::CurrentSurfaceTexture::Suboptimal(surface_texture) => surface_texture,
@@ -186,7 +187,8 @@ impl Renderer {
                 multiview_mask: None,
             });
 
-            render_pass.set_pipeline(&self.pipeline);
+            render_pass.set_pipeline(pipeline);
+            render_pass.set_bind_group(0, &camera.camera_bind_group, &[]);
 
             for shape in shapes {
                 if let (Some(buf), num_vertices) =
@@ -211,6 +213,17 @@ impl Renderer {
         self.queue.present(output);
 
         Ok(())
+    }
+
+    pub fn build_pipeline(&mut self, camera: &CameraManager) {
+        self.pipeline = Some(
+            RenderPipelineBuilder::new(&self.device, self.config.format)
+                .with_shader(include_str!("shader.wgsl"))
+                .with_vertex_layout(Mesh::vertex_layout())
+                .with_binding_group_layout(&camera.camera_bind_group_layout)
+                .build()
+                .expect("Couldn't create pipeline"),
+        );
     }
 
     pub fn viewport_view(&self) -> &wgpu::TextureView {

@@ -27,16 +27,8 @@ impl ShapeBehavior for Circle {
             let angle2 = ((i + 1) as f32 / (segments) as f32) * 2.0 * pi;
 
             vertices.push(glm::Vec3::new(0.0, 0.0, 0.0));
-            vertices.push(glm::Vec3::new(
-                glm::cos(angle1) * radius,
-                glm::sin(angle1),
-                0.0,
-            ));
-            vertices.push(glm::Vec3::new(
-                glm::cos(angle2) * radius,
-                glm::sin(angle2),
-                0.0,
-            ));
+            vertices.push(glm::Vec3::new(angle1.cos() * radius, angle1.sin(), 0.0));
+            vertices.push(glm::Vec3::new(angle2.cos() * radius, angle2.sin(), 0.0));
         }
     }
 }

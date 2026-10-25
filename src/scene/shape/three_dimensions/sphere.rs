@@ -29,9 +29,9 @@ impl ShapeBehavior for Sphere {
                     let theta = u * 2.0 * std::f32::consts::PI;
 
                     glm::Vec3::new(
-                        radius * glm::sin(phi) * glm::cos(theta),
-                        radius * glm::cos(phi),
-                        radius * glm::sin(phi) * glm::sin(theta),
+                        radius * phi.sin() * theta.cos(),
+                        radius * phi.cos(),
+                        radius * phi.sin() * theta.sin(),
                     )
                 };
 

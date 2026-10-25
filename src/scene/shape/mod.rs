@@ -124,10 +124,10 @@ impl PhysicsBody {
             let b = triangle[1];
             let c = triangle[2];
 
-            volume += glm::dot(a, glm::cross(b, c));
+            volume += glm::dot(&a, &glm::cross(&b, &c));
         }
 
-        glm::abs(volume / 6.0)
+        (volume / 6.0).abs()
     }
 }
 
@@ -149,7 +149,7 @@ impl Shape {
     }
 
     fn setPosition(&mut self, position: glm::Vec3) {
-        let delta = self.transform.position - position;
+        let delta = position - self.transform.position;
         self.transform.position = position;
 
         for child in self.children.iter_mut() {
@@ -171,12 +171,12 @@ impl Shape {
     }
 
     fn setScale(&mut self, scale: glm::Vec3) {
-        let delta = self.transform.scale - scale;
+        let ratio = scale.component_div(&self.transform.scale);
         self.transform.scale = scale;
 
         for child in self.children.iter_mut() {
             if child.physics_body.following_parent {
-                child.setPosition(child.transform.scale * delta)
+                child.setPosition(child.transform.scale.component_mul(&ratio))
             }
         }
     }
