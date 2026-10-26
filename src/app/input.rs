@@ -7,6 +7,9 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
 };
 
+use crate::app::app_state::ViewportState;
+use crate::scene::camera::Camera;
+
 #[derive(Default)]
 pub struct Input {
     pressed: HashSet<KeyCode>,
@@ -97,6 +100,41 @@ impl Input {
         }
         false
     }
+}
 
-    pub fn mouseLocalTWorldSpace() {}
+pub fn mouse_local_to_world_space(
+    viewport: &ViewportState,
+    camera: &Camera,
+    mouse_x: f32,
+    mouse_y: f32,
+) -> Option<glm::Vec3> {
+    let viewport_size = glm::Vec2::new(viewport.width as f32, viewport.height as f32);
+    if viewport_size.x <= 0.0 || viewport_size.y <= 0.0 {
+        return None;
+    }
+
+    let local_x = mouse_x - viewport_size.x;
+    let local_y = mouse_y - viewport_size.y;
+
+    let ndc_x = (2.0 * local_x) / viewport_size.x - 1.0;
+    let ndc_y = 1.0 - (2.0 * local_y) / viewport_size.y;
+
+    let projection = camera.projection();
+    let view = camera.view();
+
+    let inverse_vp = (projection * view).try_inverse()?;
+    let near_point = inverse_vp * glm::Vec4::new(ndc_x, ndc_y, -1.0, 1.0);
+    let far_point = inverse_vp * glm::Vec4::new(ndc_x, ndc_y, 1.0, 1.0);
+
+    let ray_origin = near_point.xyz() / near_point.w;
+    let ray_end = far_point.xyz() / far_point.w;
+    let ray_direction = (ray_end - ray_origin).normalize();
+
+    if (ray_direction.z).abs() < 0.00001 {
+        return None;
+    }
+
+    let t = -ray_origin.z / ray_direction.z;
+
+    Some(ray_origin + ray_direction * t)
 }

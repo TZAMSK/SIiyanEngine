@@ -77,6 +77,8 @@ impl Application {
 
         Ok(())
     }
+
+    pub fn on_viewport_clicked(worldPoint: &glm::Vec3) {}
 }
 
 impl ApplicationHandler for Application {
@@ -129,6 +131,14 @@ impl ApplicationHandler for Application {
                     }
 
                     if self.state.viewport.hovered {
+                        if let Some(p) = input::mouse_local_to_world_space(
+                            &self.state.viewport,
+                            &camera.camera,
+                            self.input.mouse_pos().x,
+                            self.input.mouse_pos().y,
+                        ) {
+                            Self::on_viewport_clicked(&p);
+                        };
                         camera.camera.zoom_camera(self.input.scroll());
                     }
 

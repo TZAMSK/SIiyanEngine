@@ -13,11 +13,12 @@ impl ConsolePanel {
         Self
     }
 
-    pub fn show(&mut self, ui: &mut egui::Ui, state: &AppState) {
+    pub fn show(&mut self, ui: &mut egui::Ui, state: &mut AppState) {
         Panel::bottom("properties_panel")
             .resizable(true)
             .default_size(dimensions::CONSOLE_HEIGHT)
             .min_size(40.0)
+            .max_size(150.0)
             .frame(egui::Frame::new().fill(Color32::from_rgb(15, 15, 15)))
             .show(ui, |ui| {
                 title_panel(ui, "Console");
@@ -25,12 +26,21 @@ impl ConsolePanel {
             });
     }
 
-    fn scene_properties(&mut self, ui: &mut egui::Ui, _state: &AppState) {
+    fn scene_properties(&mut self, ui: &mut egui::Ui, state: &mut AppState) {
         egui::Frame::new()
             .inner_margin(egui::Margin::same(8))
             .show(ui, |ui| {
-                if ui.button("Clean").clicked() {};
-                ui.label("Ready.")
+                if ui.button("Clean").clicked() {
+                    state.console.clear();
+                };
+
+                egui::ScrollArea::vertical()
+                    .auto_shrink([false, false])
+                    .stick_to_bottom(true)
+                    .show(ui, |ui| {
+                        ui.set_width(ui.available_width());
+                        ui.label(state.console.log.clone());
+                    });
             });
     }
 }

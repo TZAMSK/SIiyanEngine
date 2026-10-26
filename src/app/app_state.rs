@@ -1,9 +1,12 @@
-/// Main application state
+use crate::selection::SelectionState;
+
 #[derive(Debug)]
 pub struct AppState {
     pub viewport: ViewportState,
     pub project: ProjectState,
     pub camera: CameraState,
+    pub selection: SelectionState,
+    pub console: Console,
 }
 
 impl Default for AppState {
@@ -12,6 +15,8 @@ impl Default for AppState {
             viewport: ViewportState::default(),
             project: ProjectState::new("Untitled".to_string()),
             camera: CameraState::default(),
+            selection: SelectionState::new(),
+            console: Console::new(),
         }
     }
 }
@@ -53,4 +58,27 @@ impl ProjectState {
 pub struct CameraState {
     pub position: [f32; 3],
     pub target: [f32; 3],
+}
+
+#[derive(Debug)]
+pub struct Console {
+    pub log: String,
+}
+
+impl Console {
+    pub fn new() -> Self {
+        Self {
+            log: String::from("Ready.\n"),
+        }
+    }
+
+    pub fn append(&mut self, content: &str) {
+        self.log.push_str(content);
+        self.log.push('\n');
+    }
+
+    pub fn clear(&mut self) {
+        self.log.clear();
+        self.log.push_str("Ready.");
+    }
 }

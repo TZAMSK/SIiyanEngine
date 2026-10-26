@@ -19,6 +19,8 @@ pub struct Camera {
     fov: f32,
     znear: f32,
     zfar: f32,
+    projection: glm::Mat4,
+    view: glm::Mat4,
     ortho_scale: f32,
 }
 
@@ -30,19 +32,21 @@ pub struct CameraUniform {
 
 impl CameraManager {
     pub fn new(device: &wgpu::Device, width: u32, height: u32) -> Self {
-        let camera = Camera {
+        let mut camera = Camera {
             position: glm::Vec3::new(5.0, 8.0, -4.0),
-            target: glm::Vec3::new(0.0, 0.0, 0.0),
+            target: glm::Vec3::zeros(),
             up: glm::Vec3::new(0.0, 1.0, 0.0),
             aspect: width as f32 / height as f32,
             fov: 45.0_f32.to_radians(),
             znear: 0.1,
             zfar: 1000.0,
             ortho_scale: 12.0,
+            projection: glm::Mat4::zeros(),
+            view: glm::Mat4::zeros(),
         };
 
         let mut camera_uniform = CameraUniform::new();
-        camera_uniform.update_view_proj(&camera);
+        camera_uniform.update_view_proj(&mut camera);
 
         let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Camera buffer"),
@@ -84,7 +88,7 @@ impl CameraManager {
     }
 
     pub fn update(&mut self, queue: &wgpu::Queue) {
-        self.camera_uniform.update_view_proj(&self.camera);
+        self.camera_uniform.update_view_proj(&mut self.camera);
         queue.write_buffer(
             &self.camera_buffer,
             0,
@@ -94,9 +98,12 @@ impl CameraManager {
 }
 
 impl Camera {
-    fn build_view_projection_matrix(&self) -> glm::Mat4 {
+    fn build_view_projection_matrix(&mut self) -> glm::Mat4 {
         let view = glm::look_at(&self.position, &self.target, &self.up);
         let proj = glm::perspective(self.aspect, self.fov, self.znear, self.zfar);
+
+        self.projection = proj;
+        self.view = view;
 
         opengl_to_wgpu_matrix() * proj * view
     }
@@ -107,6 +114,14 @@ impl Camera {
 
     pub fn target(&self) -> glm::Vec3 {
         self.target
+    }
+
+    pub fn projection(&self) -> glm::Mat4 {
+        self.projection
+    }
+
+    pub fn view(&self) -> glm::Mat4 {
+        self.view
     }
 
     pub fn zoom_camera(&mut self, scroll: f32) {
@@ -128,7 +143,7 @@ impl CameraUniform {
         }
     }
 
-    fn update_view_proj(&mut self, camera: &Camera) {
+    fn update_view_proj(&mut self, camera: &mut Camera) {
         self.view_proj = camera.build_view_projection_matrix().into()
     }
 }
