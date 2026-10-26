@@ -1,4 +1,5 @@
-use wgpu::util::DeviceExt;
+use bytemuck::offset_of;
+use wgpu::{util::DeviceExt, wgc::device::queue};
 
 mod view;
 
@@ -18,6 +19,7 @@ pub struct Camera {
     fov: f32,
     znear: f32,
     zfar: f32,
+    ortho_scale: f32,
 }
 
 #[repr(C)]
@@ -29,13 +31,14 @@ pub struct CameraUniform {
 impl CameraManager {
     pub fn new(device: &wgpu::Device, width: u32, height: u32) -> Self {
         let camera = Camera {
-            position: glm::Vec3::new(0.0, 1.0, 2.0),
+            position: glm::Vec3::new(5.0, 8.0, -4.0),
             target: glm::Vec3::new(0.0, 0.0, 0.0),
             up: glm::Vec3::new(0.0, 1.0, 0.0),
             aspect: width as f32 / height as f32,
             fov: 45.0_f32.to_radians(),
             znear: 0.1,
             zfar: 1000.0,
+            ortho_scale: 12.0,
         };
 
         let mut camera_uniform = CameraUniform::new();
@@ -79,6 +82,15 @@ impl CameraManager {
             camera_bind_group_layout,
         }
     }
+
+    pub fn update(&mut self, queue: &wgpu::Queue) {
+        self.camera_uniform.update_view_proj(&self.camera);
+        queue.write_buffer(
+            &self.camera_buffer,
+            0,
+            bytemuck::cast_slice(&[self.camera_uniform]),
+        );
+    }
 }
 
 impl Camera {
@@ -87,6 +99,25 @@ impl Camera {
         let proj = glm::perspective(self.aspect, self.fov, self.znear, self.zfar);
 
         opengl_to_wgpu_matrix() * proj * view
+    }
+
+    pub fn position(&self) -> glm::Vec3 {
+        self.position
+    }
+
+    pub fn target(&self) -> glm::Vec3 {
+        self.target
+    }
+
+    pub fn zoom_camera(&mut self, scroll: f32) {
+        //let orthoZoom = self.ortho_scale - scroll_offset;
+        let offset = self.position - self.target;
+        let dist = (glm::length(&offset) * (1.0 - scroll * 0.1)).clamp(5.0, 500.0);
+        self.position = self.target + glm::normalize(&offset) * dist;
+    }
+
+    pub fn set_aspect(&mut self, aspect: f32) {
+        self.aspect = aspect
     }
 }
 

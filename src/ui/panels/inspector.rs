@@ -24,7 +24,7 @@ impl InspectorPanel {
             });
     }
 
-    fn scene_properties(&mut self, ui: &mut egui::Ui, _state: &AppState) {
+    fn scene_properties(&mut self, ui: &mut egui::Ui, state: &AppState) {
         egui::Frame::new()
             .inner_margin(egui::Margin::same(8))
             .show(ui, |ui| {
@@ -33,8 +33,8 @@ impl InspectorPanel {
 
                 ui.label("Camera");
                 ui.separator();
-                ui.label("Position:");
-                ui.label("Target");
+                ui.label(format!("Position: {}", format_vec3(state.camera.position)));
+                ui.label(format!("Target: {}", format_vec3(state.camera.target)));
                 ui.label("View mode:");
                 ui.label("Placement mode:");
 
@@ -42,4 +42,8 @@ impl InspectorPanel {
                 ui.separator();
             });
     }
+}
+
+fn format_vec3(v: [f32; 3]) -> String {
+    format!("{:2}, {:2}, {:2}", v[0], v[1], v[2])
 }

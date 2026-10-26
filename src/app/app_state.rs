@@ -3,6 +3,7 @@
 pub struct AppState {
     pub viewport: ViewportState,
     pub project: ProjectState,
+    pub camera: CameraState,
 }
 
 impl Default for AppState {
@@ -10,6 +11,7 @@ impl Default for AppState {
         Self {
             viewport: ViewportState::default(),
             project: ProjectState::new("Untitled".to_string()),
+            camera: CameraState::default(),
         }
     }
 }
@@ -26,6 +28,8 @@ pub struct ViewportState {
     pub height: u32,
     pub zoom: f32,
     pub pan: [f32; 2],
+    pub hovered: bool,
+    pub rect: [f32; 4],
 }
 
 #[derive(Debug)]
@@ -43,4 +47,10 @@ impl ProjectState {
             path: None,
         }
     }
+}
+
+#[derive(Debug, Default, Clone, Copy)]
+pub struct CameraState {
+    pub position: [f32; 3],
+    pub target: [f32; 3],
 }

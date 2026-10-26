@@ -94,17 +94,22 @@ impl ApplicationHandler for Application {
         _window_id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
-        if let (Some(window), Some(renderer), Some(ui)) = (
+        if let (Some(window), Some(renderer), Some(ui), Some(camera)) = (
             self.window.as_ref(),
             self.renderer.as_mut(),
             self.ui.as_mut(),
+            self.camera.as_mut(),
         ) {
-            if ui.handle_event(window, &event) {
+            let consumed = ui.handle_event(window, &event);
+
+            if self.input.handle_keyboard(window, &event) {
+                event_loop.exit();
                 return;
             }
 
-            if self.input.handle_event(window, &event) {
-                event_loop.exit();
+            self.input.handle_mouse(window, &event);
+
+            if consumed {
                 return;
             }
 
@@ -116,12 +121,29 @@ impl ApplicationHandler for Application {
                 winit::event::WindowEvent::RedrawRequested => {
                     self.state.update();
 
+                    let (w, h) = (self.state.viewport.width, self.state.viewport.height);
+                    if w > 0 && h > 0 && (w, h) != renderer.viewport_size() {
+                        renderer.resize_viewport(w, h);
+                        camera.camera.set_aspect(w as f32 / h as f32);
+                        ui.update_viewport_texture(&renderer.device, renderer.viewport_view());
+                    }
+
+                    if self.state.viewport.hovered {
+                        camera.camera.zoom_camera(self.input.scroll());
+                    }
+
+                    camera.update(&renderer.queue);
+                    self.input.end_frame();
+
+                    self.state.camera.position = camera.camera.position().into();
+                    self.state.camera.target = camera.camera.target().into();
+
                     match renderer.render(
                         ui,
                         &mut self.state,
                         window,
                         &self.scene.as_ref().unwrap().shapes,
-                        &self.camera.as_ref().unwrap(),
+                        camera,
                     ) {
                         Ok(_) => {}
                         Err(SurfaceError::Lost | SurfaceError::Outdated) => {

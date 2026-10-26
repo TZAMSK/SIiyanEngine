@@ -95,12 +95,7 @@ impl Renderer {
         upload_shapes(shapes, &device);
         write_shapes(shapes, &queue);
 
-        let viewport = ViewportRenderer::new(
-            &device,
-            surface_format,
-            size.width.max(1),
-            size.height.max(1),
-        );
+        let viewport = ViewportRenderer::new(&device, surface_format, config.width, config.height);
 
         let grid = GridAxisRenderer::new(&device);
 
@@ -252,5 +247,13 @@ impl Renderer {
 
     pub fn viewport_view(&self) -> &wgpu::TextureView {
         &self.viewport.view
+    }
+
+    pub fn resize_viewport(&mut self, width: u32, height: u32) {
+        self.viewport.resize(&self.device, width, height)
+    }
+
+    pub fn viewport_size(&self) -> (u32, u32) {
+        (self.viewport.width, self.viewport.height)
     }
 }

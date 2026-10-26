@@ -90,7 +90,9 @@ impl UIManager {
         self.components.inspector.show(ui, state);
 
         if let Some(texture_id) = self.viewport_texture_id {
-            self.components.viewport.show(ui, Some(texture_id));
+            self.components
+                .viewport
+                .show(ui, Some(texture_id), &mut state.viewport);
         }
     }
 
@@ -172,5 +174,16 @@ impl UIManager {
 
     pub fn set_viewport_texture(&mut self, texture_id: egui::TextureId) {
         self.viewport_texture_id = Some(texture_id)
+    }
+
+    pub fn update_viewport_texture(&mut self, device: &Device, view: &wgpu::TextureView) {
+        if let Some(id) = self.viewport_texture_id {
+            self.egui_renderer.update_egui_texture_from_wgpu_texture(
+                device,
+                view,
+                wgpu::FilterMode::Linear,
+                id,
+            );
+        }
     }
 }

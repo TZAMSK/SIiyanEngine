@@ -8,6 +8,7 @@ pub struct ViewportRenderer {
     pub view: TextureView,
     pub depth_texture: Texture,
     pub depth_view: TextureView,
+    pub format: TextureFormat,
     pub width: u32,
     pub height: u32,
 }
@@ -53,8 +54,13 @@ impl ViewportRenderer {
             view,
             depth_texture,
             depth_view,
+            format,
             width,
             height,
         }
+    }
+
+    pub fn resize(&mut self, device: &Device, width: u32, height: u32) {
+        *self = Self::new(device, self.format, width, height)
     }
 }
