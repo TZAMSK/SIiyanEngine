@@ -5,6 +5,16 @@ pub struct Rectangle {
     pub shape: Shape,
 }
 
+impl Rectangle {
+    pub fn new(name: &str, position: glm::Vec3, color: glm::Vec4) -> Self {
+        let mut rectangle = Self {
+            shape: Shape::new(name.to_string(), position, color),
+        };
+        rectangle.rebuild_mesh();
+        rectangle
+    }
+}
+
 impl ShapeBehavior for Rectangle {
     fn shape_type(&self) -> ShapeType {
         ShapeType::Rectangle

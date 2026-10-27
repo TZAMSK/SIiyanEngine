@@ -5,6 +5,16 @@ pub struct Triangle {
     pub shape: Shape,
 }
 
+impl Triangle {
+    pub fn new(name: &str, position: glm::Vec3, color: glm::Vec4) -> Self {
+        let mut triangle = Self {
+            shape: Shape::new(name.to_string(), position, color),
+        };
+        triangle.rebuild_mesh();
+        triangle
+    }
+}
+
 impl ShapeBehavior for Triangle {
     fn shape_type(&self) -> ShapeType {
         ShapeType::Triangle

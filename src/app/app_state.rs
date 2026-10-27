@@ -1,9 +1,8 @@
-use crate::selection::SelectionState;
+use crate::selection::{PlacementMode, SelectionState};
 
 #[derive(Debug)]
 pub struct AppState {
     pub viewport: ViewportState,
-    pub project: ProjectState,
     pub camera: CameraState,
     pub selection: SelectionState,
     pub console: Console,
@@ -13,7 +12,6 @@ impl Default for AppState {
     fn default() -> Self {
         Self {
             viewport: ViewportState::default(),
-            project: ProjectState::new("Untitled".to_string()),
             camera: CameraState::default(),
             selection: SelectionState::new(),
             console: Console::new(),
@@ -25,33 +23,29 @@ impl AppState {
     pub fn update(&mut self) {
         // Update any time-dependent state
     }
+
+    pub fn log_shape_added(&mut self, position: &glm::Vec3) {
+        match self.selection.placement_mode {
+            PlacementMode::Triangle => self.console.append_shape_added("Triangle", &position),
+            PlacementMode::Rectangle => self.console.append_shape_added("Rectangle", &position),
+            PlacementMode::Circle => self.console.append_shape_added("Circle", &position),
+            PlacementMode::Cube => self.console.append_shape_added("Cube", &position),
+            PlacementMode::Sphere => self.console.append_shape_added("Sphere", &position),
+            _ => {}
+        }
+    }
 }
 
 #[derive(Debug, Default)]
 pub struct ViewportState {
     pub width: u32,
     pub height: u32,
+    pub position: glm::Vec2,
     pub zoom: f32,
     pub pan: [f32; 2],
     pub hovered: bool,
+    pub clicked: bool,
     pub rect: [f32; 4],
-}
-
-#[derive(Debug)]
-pub struct ProjectState {
-    pub name: String,
-    pub modified: bool,
-    pub path: Option<String>,
-}
-
-impl ProjectState {
-    pub fn new(name: String) -> Self {
-        Self {
-            name,
-            modified: false,
-            path: None,
-        }
-    }
 }
 
 #[derive(Debug, Default, Clone, Copy)]
@@ -80,5 +74,12 @@ impl Console {
     pub fn clear(&mut self) {
         self.log.clear();
         self.log.push_str("Ready.");
+    }
+
+    pub fn append_shape_added(&mut self, shape: &str, position: &glm::Vec3) {
+        self.log.push_str(&format!(
+            "Added {} at ({:2}, {:2}, {:2}\n",
+            shape, position.x, position.y, position.z,
+        ));
     }
 }

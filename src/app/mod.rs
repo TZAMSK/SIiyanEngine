@@ -28,8 +28,8 @@ impl Application {
     pub async fn new() -> Self {
         let cube = Cube::new(
             "Cube",
-            glm::Vec3::new(0.0, 0.0, 0.0),
-            glm::Vec4::new(1.0, 1.0, 1.0, 1.0),
+            glm::Vec3::new(10.0, 0.0, 0.0),
+            glm::Vec4::new(0.50, 1.0, 1.0, 1.0),
         );
 
         let scene = Scene {
@@ -78,7 +78,11 @@ impl Application {
         Ok(())
     }
 
-    pub fn on_viewport_clicked(worldPoint: &glm::Vec3) {}
+    pub fn on_viewport_clicked(scene: &mut Scene, state: &mut AppState, world_point: &glm::Vec3) {
+        scene.add_shape(&state.selection, world_point);
+        state.log_shape_added(&world_point);
+        state.selection.disarm_placement();
+    }
 }
 
 impl ApplicationHandler for Application {
@@ -137,7 +141,12 @@ impl ApplicationHandler for Application {
                             self.input.mouse_pos().x,
                             self.input.mouse_pos().y,
                         ) {
-                            Self::on_viewport_clicked(&p);
+                            if let Some(scene) = self.scene.as_mut() {
+                                if self.state.viewport.clicked {
+                                    Self::on_viewport_clicked(scene, &mut self.state, &p);
+                                }
+                                renderer.sync_shapes(&mut scene.shapes);
+                            }
                         };
                         camera.camera.zoom_camera(self.input.scroll());
                     }

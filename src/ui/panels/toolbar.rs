@@ -74,7 +74,7 @@ impl ToolbarPanel {
         }
 
         if ui.button("Sphere").clicked() {
-            state.selection.arm_cube_placement();
+            state.selection.arm_sphere_placement();
             state
                 .console
                 .append("Sphere placement armed. Clicke inside the viewport");

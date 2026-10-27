@@ -7,6 +7,20 @@ pub struct Sphere {
     pub properties: RoundProperties,
 }
 
+impl Sphere {
+    pub fn new(name: &str, position: glm::Vec3, color: glm::Vec4) -> Self {
+        let mut sphere = Self {
+            shape: Shape::new(name.to_string(), position, color),
+            properties: RoundProperties {
+                radius: 1.0,
+                segments: 4,
+            },
+        };
+        sphere.rebuild_mesh();
+        sphere
+    }
+}
+
 impl ShapeBehavior for Sphere {
     fn shape_type(&self) -> ShapeType {
         ShapeType::Sphere

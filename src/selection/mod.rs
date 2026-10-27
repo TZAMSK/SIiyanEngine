@@ -10,7 +10,7 @@ pub enum PlacementMode {
 
 #[derive(Debug)]
 pub struct SelectionState {
-    placement_mode: PlacementMode,
+    pub placement_mode: PlacementMode,
     show_selection_window: bool,
 }
 

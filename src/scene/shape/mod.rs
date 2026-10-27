@@ -2,7 +2,7 @@ use wgpu::{BufferAddress, VertexBufferLayout, VertexStepMode};
 
 mod round;
 pub mod three_dimensions;
-mod two_dimensions;
+pub mod two_dimensions;
 
 pub enum ShapeType {
     Triangle,
@@ -29,7 +29,7 @@ pub struct Shape {
     pub parent: Option<u32>,
 }
 
-struct Transform {
+pub struct Transform {
     pub position: glm::Vec3,
     pub rotation: glm::Vec3,
     pub scale: glm::Vec3,
@@ -40,7 +40,7 @@ impl Default for Transform {
         Self {
             position: glm::Vec3::new(0.0, 0.0, 0.0),
             rotation: glm::Vec3::new(0.0, 0.0, 0.0),
-            scale: glm::Vec3::new(1.0, 1.0, 1.0),
+            scale: glm::Vec3::new(1.0, 0.1, 1.0),
         }
     }
 }
@@ -68,7 +68,12 @@ impl Mesh {
         }
     }
 
-    pub fn upload_to_gpu(&mut self, device: &wgpu::Device, color: &glm::Vec4) {
+    pub fn upload_to_gpu(
+        &mut self,
+        device: &wgpu::Device,
+        position: &glm::Vec3,
+        color: &glm::Vec4,
+    ) {
         if self.vertices.is_empty() {
             self.vertex_buffer = None;
             self.vertex_data.clear();
@@ -77,7 +82,15 @@ impl Mesh {
 
         let mut raw: Vec<f32> = Vec::with_capacity(self.vertices.len() * 7);
         for v in &self.vertices {
-            raw.extend_from_slice(&[v.x, v.y, v.z, color.x, color.y, color.z, color.w]);
+            raw.extend_from_slice(&[
+                v.x + position.x,
+                v.y + position.y,
+                v.z + position.z,
+                color.x,
+                color.y,
+                color.z,
+                color.w,
+            ]);
         }
         self.vertex_data = bytemuck::cast_slice(&raw).to_vec();
 

@@ -1,2 +1,2 @@
 pub mod cube;
-mod sphere;
+pub mod sphere;

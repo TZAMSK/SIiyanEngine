@@ -1,3 +1,3 @@
-mod circle;
-mod rectangle;
-mod triangle;
+pub mod circle;
+pub mod rectangle;
+pub mod triangle;

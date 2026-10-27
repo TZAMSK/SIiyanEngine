@@ -109,12 +109,13 @@ pub fn mouse_local_to_world_space(
     mouse_y: f32,
 ) -> Option<glm::Vec3> {
     let viewport_size = glm::Vec2::new(viewport.width as f32, viewport.height as f32);
+
     if viewport_size.x <= 0.0 || viewport_size.y <= 0.0 {
         return None;
     }
 
-    let local_x = mouse_x - viewport_size.x;
-    let local_y = mouse_y - viewport_size.y;
+    let local_x = mouse_x - viewport.position.x;
+    let local_y = mouse_y - viewport.position.y;
 
     let ndc_x = (2.0 * local_x) / viewport_size.x - 1.0;
     let ndc_y = 1.0 - (2.0 * local_y) / viewport_size.y;

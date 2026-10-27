@@ -36,19 +36,19 @@ pub struct Renderer {
     grid: GridAxisRenderer,
 }
 
-fn upload_shapes(shapes: &mut [Shape], device: &Device) {
+fn upload_shapes(shapes: &mut [Shape], device: &Device, queue: &Queue) {
     for shape in shapes {
-        shape.mesh.upload_to_gpu(device, &shape.material.color);
-        upload_shapes(&mut shape.children, device);
-    }
-}
+        if shape.mesh.vertex_buffer.is_none() && !shape.mesh.vertices.is_empty() {
+            shape
+                .mesh
+                .upload_to_gpu(device, &shape.transform.position, &shape.material.color);
 
-fn write_shapes(shapes: &[Shape], queue: &Queue) {
-    for shape in shapes {
-        if let Some(buf) = &shape.mesh.vertex_buffer {
-            queue.write_buffer(buf, 0, &shape.mesh.vertex_data);
+            if let Some(buffer) = &shape.mesh.vertex_buffer {
+                queue.write_buffer(buffer, 0, &shape.mesh.vertex_data);
+            }
         }
-        write_shapes(&shape.children, queue);
+
+        upload_shapes(&mut shape.children, device, &queue);
     }
 }
 
@@ -92,8 +92,7 @@ impl Renderer {
 
         surface.configure(&device, &config);
 
-        upload_shapes(shapes, &device);
-        write_shapes(shapes, &queue);
+        upload_shapes(shapes, &device, &queue);
 
         let viewport = ViewportRenderer::new(&device, surface_format, config.width, config.height);
 
@@ -243,6 +242,10 @@ impl Renderer {
                 .build()
                 .expect("Couldn't create grid_pipeline"),
         );
+    }
+
+    pub fn sync_shapes(&mut self, shapes: &mut [Shape]) {
+        upload_shapes(shapes, &self.device, &self.queue);
     }
 
     pub fn viewport_view(&self) -> &wgpu::TextureView {

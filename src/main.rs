@@ -1,7 +1,7 @@
 mod app;
 mod renderer;
 mod scene;
-mod selection;
+pub mod selection;
 mod ui;
 
 use winit::event_loop::EventLoop;

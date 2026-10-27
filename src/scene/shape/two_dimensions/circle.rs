@@ -7,6 +7,20 @@ pub struct Circle {
     pub properties: RoundProperties,
 }
 
+impl Circle {
+    pub fn new(name: &str, position: glm::Vec3, color: glm::Vec4) -> Self {
+        let mut circle = Self {
+            shape: Shape::new(name.to_string(), position, color),
+            properties: RoundProperties {
+                radius: 1.0,
+                segments: 4,
+            },
+        };
+        circle.rebuild_mesh();
+        circle
+    }
+}
+
 impl ShapeBehavior for Circle {
     fn shape_type(&self) -> ShapeType {
         ShapeType::Circle
