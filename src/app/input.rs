@@ -151,11 +151,11 @@ pub fn mouse_local_to_world_space(
     let ray_end = far_point.xyz() / far_point.w;
     let ray_direction = (ray_end - ray_origin).normalize();
 
-    if ray_direction.y.abs() < 1e-5 {
+    if ray_direction.z.abs() < 1e-5 {
         return None;
     }
 
-    let t = -ray_origin.y / ray_direction.y;
+    let t = -ray_origin.z / ray_direction.z;
 
     if t < 0.0 {
         return None;

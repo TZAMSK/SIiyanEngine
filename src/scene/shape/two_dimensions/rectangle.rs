@@ -25,12 +25,12 @@ impl ShapeBehavior for Rectangle {
 
         vertices.clear();
 
-        vertices.push(glm::Vec3::new(-2.0, 0.0, -1.0));
-        vertices.push(glm::Vec3::new(2.0, 0.0, -1.0));
-        vertices.push(glm::Vec3::new(2.0, 0.0, 1.0));
+        vertices.push(glm::Vec3::new(-2.0, -1.0, 0.0));
+        vertices.push(glm::Vec3::new(2.0, -1.0, 0.0));
+        vertices.push(glm::Vec3::new(2.0, 1.0, 0.0));
 
-        vertices.push(glm::Vec3::new(-2.0, 0.0, -1.0));
-        vertices.push(glm::Vec3::new(2.0, 0.0, 1.0));
-        vertices.push(glm::Vec3::new(-2.0, 0.0, 1.0));
+        vertices.push(glm::Vec3::new(-2.0, -1.0, 0.0));
+        vertices.push(glm::Vec3::new(2.0, 1.0, 0.0));
+        vertices.push(glm::Vec3::new(-2.0, 1.0, 0.0));
     }
 }

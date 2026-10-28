@@ -38,9 +38,9 @@ pub struct CameraUniform {
 impl CameraManager {
     pub fn new(device: &wgpu::Device, width: u32, height: u32) -> Self {
         let mut camera = Camera {
-            position: glm::Vec3::new(5.0, 8.0, -4.0),
+            position: glm::Vec3::new(5.0, -8.0, 4.0),
             target: glm::Vec3::zeros(),
-            up: glm::Vec3::new(0.0, 1.0, 0.0),
+            up: glm::Vec3::new(0.0, 0.0, 1.0),
             aspect: width as f32 / height as f32,
             fov: 45.0_f32.to_radians(),
             znear: 0.1,
@@ -147,7 +147,7 @@ impl Camera {
         mouse_delta: glm::Vec2,
         sensitivity: f32,
     ) {
-        self.camera_movement.yaw += mouse_delta.x * sensitivity;
+        self.camera_movement.yaw -= mouse_delta.x * sensitivity;
         self.camera_movement.pitch += mouse_delta.y * sensitivity;
         self.camera_movement.pitch = self.camera_movement.pitch.clamp(-89.0, 89.0);
 
@@ -157,8 +157,9 @@ impl Camera {
         let pitch_rad = self.camera_movement.pitch.to_radians();
 
         self.position.x = self.target.x + radius * pitch_rad.cos() * yaw_rad.cos();
-        self.position.y = self.target.y + radius * pitch_rad.sin();
-        self.position.z = self.target.z + radius * pitch_rad.cos() * yaw_rad.sin();
+        self.position.y = self.target.y + radius * pitch_rad.cos() * yaw_rad.sin();
+        self.position.z = self.target.z + radius * pitch_rad.sin();
+        
     }
 
     pub fn set_aspect(&mut self, aspect: f32) {
@@ -169,8 +170,8 @@ impl Camera {
         let offset = self.position - self.target;
         let radius = offset.magnitude();
 
-        self.camera_movement.yaw = offset.z.atan2(offset.x).to_degrees();
-        self.camera_movement.pitch = (offset.y / radius).asin().to_degrees();
+        self.camera_movement.yaw = offset.y.atan2(offset.x).to_degrees();
+        self.camera_movement.pitch = (offset.z / radius).asin().to_degrees();
     }
 }
 
