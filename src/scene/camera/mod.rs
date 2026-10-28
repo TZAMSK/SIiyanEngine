@@ -1,5 +1,4 @@
-use bytemuck::offset_of;
-use wgpu::{util::DeviceExt, wgc::device::queue};
+use wgpu::util::DeviceExt;
 
 mod view;
 
@@ -22,6 +21,12 @@ pub struct Camera {
     projection: glm::Mat4,
     view: glm::Mat4,
     ortho_scale: f32,
+    camera_movement: CameraMovement,
+}
+
+pub struct CameraMovement {
+    yaw: f32,
+    pitch: f32,
 }
 
 #[repr(C)]
@@ -43,7 +48,13 @@ impl CameraManager {
             ortho_scale: 12.0,
             projection: glm::Mat4::zeros(),
             view: glm::Mat4::zeros(),
+            camera_movement: CameraMovement {
+                yaw: 0.0,
+                pitch: 0.0,
+            },
         };
+
+        camera.init_angle();
 
         let mut camera_uniform = CameraUniform::new();
         camera_uniform.update_view_proj(&mut camera);
@@ -94,7 +105,7 @@ impl CameraManager {
             0,
             bytemuck::cast_slice(&[self.camera_uniform]),
         );
-    }
+    } 
 }
 
 impl Camera {
@@ -131,8 +142,35 @@ impl Camera {
         self.position = self.target + glm::normalize(&offset) * dist;
     }
 
+    pub fn move_camera(
+        &mut self,
+        mouse_delta: glm::Vec2,
+        sensitivity: f32,
+    ) {
+        self.camera_movement.yaw += mouse_delta.x * sensitivity;
+        self.camera_movement.pitch += mouse_delta.y * sensitivity;
+        self.camera_movement.pitch = self.camera_movement.pitch.clamp(-89.0, 89.0);
+
+        let radius = (self.position - self.target).magnitude();
+
+        let yaw_rad = self.camera_movement.yaw.to_radians();
+        let pitch_rad = self.camera_movement.pitch.to_radians();
+
+        self.position.x = self.target.x + radius * pitch_rad.cos() * yaw_rad.cos();
+        self.position.y = self.target.y + radius * pitch_rad.sin();
+        self.position.z = self.target.z + radius * pitch_rad.cos() * yaw_rad.sin();
+    }
+
     pub fn set_aspect(&mut self, aspect: f32) {
         self.aspect = aspect
+    }
+
+    pub fn init_angle(&mut self) {
+        let offset = self.position - self.target;
+        let radius = offset.magnitude();
+
+        self.camera_movement.yaw = offset.z.atan2(offset.x).to_degrees();
+        self.camera_movement.pitch = (offset.y / radius).asin().to_degrees();
     }
 }
 

@@ -1,4 +1,4 @@
-use egui::{containers::panel::CentralPanel, response};
+use egui::containers::panel::CentralPanel;
 
 use crate::{app::app_state::ViewportState, ui::panels::title_panel};
 
@@ -32,7 +32,7 @@ impl ViewportPanel {
                 viewport_state.clicked = response.clicked();
 
                 let r = response.rect;
-                viewport_state.position = glm::Vec2::new(r.min.x, r.min.y);
+                viewport_state.position = glm::Vec2::new(r.min.x * ppp, r.min.y * ppp);
                 let r = response.rect;
                 viewport_state.rect = [r.min.x, r.min.y, r.max.x, r.max.y];
             }

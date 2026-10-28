@@ -40,7 +40,7 @@ impl Default for Transform {
         Self {
             position: glm::Vec3::new(0.0, 0.0, 0.0),
             rotation: glm::Vec3::new(0.0, 0.0, 0.0),
-            scale: glm::Vec3::new(1.0, 0.1, 1.0),
+            scale: glm::Vec3::new(1.0, 1.0, 1.0),
         }
     }
 }

@@ -1,5 +1,5 @@
 use wgpu::{
-    BlendState, ColorTargetState, ColorWrites, CompareFunction, DepthBiasState, Device, Face,
+    BlendState, ColorTargetState, ColorWrites, CompareFunction, DepthBiasState, Device,
     FragmentState, FrontFace, MultisampleState, PipelineCompilationOptions,
     PipelineLayoutDescriptor, PolygonMode, PrimitiveState, PrimitiveTopology, RenderPipeline,
     RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, StencilState, TextureFormat,
@@ -94,7 +94,7 @@ impl<'a> RenderPipelineBuilder<'a> {
                     topology: self.topology,
                     strip_index_format: None,
                     front_face: FrontFace::Ccw,
-                    cull_mode: Some(Face::Back),
+                    cull_mode: None,
                     polygon_mode: PolygonMode::Fill,
                     unclipped_depth: false,
                     conservative: false,

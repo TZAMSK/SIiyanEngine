@@ -3,12 +3,14 @@ mod input;
 
 use std::sync::Arc;
 
-use input::Input;
 use wgpu::hal::SurfaceError;
 use winit::{application::ApplicationHandler, window::Window};
 
 use crate::{
-    app::app_state::AppState,
+    app::{
+        app_state::AppState,
+        input::{Drag, Input},
+    },
     renderer::Renderer,
     scene::{camera::CameraManager, shape::three_dimensions::cube::Cube, Scene},
     ui::UIManager,
@@ -134,21 +136,27 @@ impl ApplicationHandler for Application {
                         ui.update_viewport_texture(&renderer.device, renderer.viewport_view());
                     }
 
+                    self.input.update_drag(self.state.viewport.hovered);
+                    if self.input.drag() == Drag::Orbit {
+                        camera.camera.move_camera(self.input.mouse_delta(), 0.25);
+                    }
+
                     if self.state.viewport.hovered {
-                        if let Some(p) = input::mouse_local_to_world_space(
-                            &self.state.viewport,
-                            &camera.camera,
-                            self.input.mouse_pos().x,
-                            self.input.mouse_pos().y,
-                        ) {
-                            if let Some(scene) = self.scene.as_mut() {
-                                if self.state.viewport.clicked {
-                                    Self::on_viewport_clicked(scene, &mut self.state, &p);
-                                }
-                                renderer.sync_shapes(&mut scene.shapes);
-                            }
-                        };
                         camera.camera.zoom_camera(self.input.scroll());
+
+                        if self.state.viewport.clicked {
+                            if let Some(p) = input::mouse_local_to_world_space(
+                                &self.state.viewport,
+                                &camera.camera,
+                                self.input.mouse_pos().x,
+                                self.input.mouse_pos().y,
+                            ) {
+                                if let Some(scene) = self.scene.as_mut() {
+                                    Self::on_viewport_clicked(scene, &mut self.state, &p);
+                                    renderer.sync_shapes(&mut scene.shapes);
+                                }
+                            }
+                        }
                     }
 
                     camera.update(&renderer.queue);

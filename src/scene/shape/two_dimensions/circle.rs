@@ -13,7 +13,7 @@ impl Circle {
             shape: Shape::new(name.to_string(), position, color),
             properties: RoundProperties {
                 radius: 1.0,
-                segments: 4,
+                segments: 6,
             },
         };
         circle.rebuild_mesh();
@@ -41,8 +41,8 @@ impl ShapeBehavior for Circle {
             let angle2 = ((i + 1) as f32 / (segments) as f32) * 2.0 * pi;
 
             vertices.push(glm::Vec3::new(0.0, 0.0, 0.0));
-            vertices.push(glm::Vec3::new(angle1.cos() * radius, angle1.sin(), 0.0));
-            vertices.push(glm::Vec3::new(angle2.cos() * radius, angle2.sin(), 0.0));
+            vertices.push(glm::Vec3::new(angle1.cos() * radius, 0.0, angle1.sin()));
+            vertices.push(glm::Vec3::new(angle2.cos() * radius, 0.0, angle2.sin()));
         }
     }
 }

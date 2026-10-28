@@ -17,6 +17,14 @@ pub struct Input {
     mouse_pos: glm::Vec2,
     mouse_delta: glm::Vec2,
     scroll: f32,
+    drag: Drag,
+}
+
+#[derive(Default, PartialEq, Clone, Copy)]
+pub enum Drag {
+    #[default]
+    None,
+    Orbit,
 }
 
 impl Input {
@@ -36,9 +44,21 @@ impl Input {
         self.scroll
     }
 
+    pub fn drag(&self) -> Drag {
+        self.drag
+    }
+
     pub fn end_frame(&mut self) {
         self.mouse_delta = glm::vec2(0.0, 0.0);
         self.scroll = 0.0
+    }
+
+    pub fn update_drag(&mut self, viewport_hovered: bool) {
+        if !self.mouse_button_down(MouseButton::Middle) {
+            self.drag = Drag::None;
+        } else if self.drag == Drag::None && viewport_hovered {
+            self.drag = Drag::Orbit;
+        }
     }
 
     pub fn handle_mouse(&mut self, _window: &Window, event: &WindowEvent) -> bool {
@@ -131,11 +151,15 @@ pub fn mouse_local_to_world_space(
     let ray_end = far_point.xyz() / far_point.w;
     let ray_direction = (ray_end - ray_origin).normalize();
 
-    if (ray_direction.z).abs() < 0.00001 {
+    if ray_direction.y.abs() < 1e-5 {
         return None;
     }
 
-    let t = -ray_origin.z / ray_direction.z;
+    let t = -ray_origin.y / ray_direction.y;
+
+    if t < 0.0 {
+        return None;
+    }
 
     Some(ray_origin + ray_direction * t)
 }
