@@ -7,11 +7,18 @@ var<uniform> camera: CameraUniform;
 struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) color: vec3<f32>,
+    @location(2) id: u32,
 }
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) color: vec3<f32>,
+    @location(1) @interpolate(flat) id: u32,
+}
+
+struct FragmentOutput {
+    @location(0) color: vec4<f32>,
+    @location(1) id: u32,
 }
 
 @vertex
@@ -19,10 +26,14 @@ fn vs_main(model: VertexInput) -> VertexOutput {
     var out: VertexOutput;
     out.clip_position = camera.view_proj * vec4<f32>(model.position, 1.0);
     out.color = model.color;
+    out.id = model.id;
     return out;
 }
 
 @fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return vec4<f32>(in.color, 1.0);
+fn fs_main(in: VertexOutput) -> FragmentOutput {
+    var out: FragmentOutput;
+    out.color = vec4<f32>(in.color, 1.0);
+    out.id = in.id;
+    return out;
 }

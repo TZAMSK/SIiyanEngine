@@ -8,6 +8,8 @@ pub struct ViewportRenderer {
     pub view: TextureView,
     pub depth_texture: Texture,
     pub depth_view: TextureView,
+    pub id_texture: Texture,
+    pub id_view: TextureView,
     pub format: TextureFormat,
     pub width: u32,
     pub height: u32,
@@ -49,11 +51,30 @@ impl ViewportRenderer {
 
         let depth_view = depth_texture.create_view(&TextureViewDescriptor::default());
 
+        let id_texture = device.create_texture(&TextureDescriptor {
+            label: Some("Viewport Id"),
+            size: Extent3d {
+                depth_or_array_layers: 1,
+                width,
+                height,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: TextureDimension::D2,
+            format: TextureFormat::R32Uint,
+            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
+
+        let id_view = id_texture.create_view(&TextureViewDescriptor::default());
+
         Self {
             texture,
             view,
             depth_texture,
             depth_view,
+            id_texture,
+            id_view,
             format,
             width,
             height,

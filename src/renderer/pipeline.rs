@@ -13,6 +13,7 @@ pub struct RenderPipelineBuilder<'a> {
     vertex_layout: Option<VertexBufferLayout<'static>>,
     binding_group_layout: Vec<wgpu::BindGroupLayout>,
     topology: PrimitiveTopology,
+    id_format: Option<TextureFormat>,
 }
 
 impl<'a> RenderPipelineBuilder<'a> {
@@ -24,6 +25,7 @@ impl<'a> RenderPipelineBuilder<'a> {
             vertex_layout: None,
             binding_group_layout: Vec::new(),
             topology: PrimitiveTopology::TriangleList,
+            id_format: None,
         }
     }
 
@@ -44,6 +46,11 @@ impl<'a> RenderPipelineBuilder<'a> {
 
     pub fn with_topology(mut self, topology: PrimitiveTopology) -> Self {
         self.topology = topology;
+        self
+    }
+
+    pub fn with_id_format(mut self) -> Self {
+        self.id_format = Some(TextureFormat::R32Uint);
         self
     }
 
@@ -69,6 +76,20 @@ impl<'a> RenderPipelineBuilder<'a> {
                 immediate_size: 0,
             });
 
+        let mut targets = vec![Some(ColorTargetState {
+            format: self.format,
+            blend: None,
+            write_mask: ColorWrites::ALL,
+        })];
+
+        if let Some(id_format) = self.id_format {
+            targets.push(Some(ColorTargetState {
+                format: id_format,
+                blend: None,
+                write_mask: ColorWrites::ALL,
+            }));
+        }
+
         Ok(self
             .device
             .create_render_pipeline(&RenderPipelineDescriptor {
@@ -83,11 +104,7 @@ impl<'a> RenderPipelineBuilder<'a> {
                 fragment: Some(FragmentState {
                     module: &shader_module,
                     entry_point: Some("fs_main"),
-                    targets: &[Some(ColorTargetState {
-                        format: self.format,
-                        blend: Some(BlendState::REPLACE),
-                        write_mask: ColorWrites::ALL,
-                    })],
+                    targets: &targets,
                     compilation_options: PipelineCompilationOptions::default(),
                 }),
                 primitive: PrimitiveState {

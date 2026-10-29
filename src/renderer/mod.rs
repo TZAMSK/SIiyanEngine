@@ -39,9 +39,12 @@ pub struct Renderer {
 fn upload_shapes(shapes: &mut [Shape], device: &Device, queue: &Queue) {
     for shape in shapes {
         if shape.mesh.vertex_buffer.is_none() && !shape.mesh.vertices.is_empty() {
-            shape
-                .mesh
-                .upload_to_gpu(device, &shape.transform.position, &shape.material.color);
+            shape.mesh.upload_to_gpu(
+                device,
+                &shape.transform.position,
+                &shape.material.color,
+                shape.id,
+            );
 
             if let Some(buffer) = &shape.mesh.vertex_buffer {
                 queue.write_buffer(buffer, 0, &shape.mesh.vertex_data);
@@ -164,20 +167,36 @@ impl Renderer {
         {
             let mut render_pass = encoder.begin_render_pass(&RenderPassDescriptor {
                 label: Some("3D Render Pass"),
-                color_attachments: &[Some(RenderPassColorAttachment {
-                    view: &self.viewport.view,
-                    resolve_target: None,
-                    ops: Operations {
-                        load: LoadOp::Clear(Color {
-                            r: 0.04,
-                            g: 0.04,
-                            b: 0.04,
-                            a: 1.0,
-                        }),
-                        store: StoreOp::Store,
-                    },
-                    depth_slice: None,
-                })],
+                color_attachments: &[
+                    Some(RenderPassColorAttachment {
+                        view: &self.viewport.view,
+                        resolve_target: None,
+                        ops: Operations {
+                            load: LoadOp::Clear(Color {
+                                r: 0.04,
+                                g: 0.04,
+                                b: 0.04,
+                                a: 1.0,
+                            }),
+                            store: StoreOp::Store,
+                        },
+                        depth_slice: None,
+                    }),
+                    Some(RenderPassColorAttachment {
+                        view: &self.viewport.id_view,
+                        resolve_target: None,
+                        ops: Operations {
+                            load: LoadOp::Clear(Color {
+                                r: 0.0,
+                                g: 0.0,
+                                b: 0.0,
+                                a: 0.0,
+                            }),
+                            store: StoreOp::Store,
+                        },
+                        depth_slice: None,
+                    }),
+                ],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: &self.viewport.depth_view,
                     depth_ops: Some(Operations {
@@ -229,16 +248,18 @@ impl Renderer {
                 .with_shader(include_str!("shader.wgsl"))
                 .with_vertex_layout(Mesh::vertex_layout())
                 .with_binding_group_layout(&camera.camera_bind_group_layout)
+                .with_id_format()
                 .build()
                 .expect("Couldn't create pipeline"),
         );
 
         self.grid_pipeline = Some(
             RenderPipelineBuilder::new(&self.device, self.config.format)
-                .with_shader(include_str!("shader.wgsl"))
+                .with_shader(include_str!("grid_shader.wgsl"))
                 .with_vertex_layout(GridAxisRenderer::vertex_layout())
                 .with_binding_group_layout(&camera.camera_bind_group_layout)
                 .with_topology(wgpu::PrimitiveTopology::LineList)
+                .with_id_format()
                 .build()
                 .expect("Couldn't create grid_pipeline"),
         );

@@ -1,3 +1,5 @@
+use std::sync::atomic::{AtomicU64, Ordering};
+
 use wgpu::{BufferAddress, VertexBufferLayout, VertexStepMode};
 
 mod round;
@@ -17,16 +19,18 @@ pub trait ShapeBehavior {
     fn rebuild_mesh(&mut self);
 }
 
+static NEXT_ID: AtomicU64 = AtomicU64::new(1);
+
 #[derive(Default)]
 pub struct Shape {
-    pub id: u32,
+    pub id: u64,
     pub name: String,
     pub transform: Transform,
     pub mesh: Mesh,
     pub material: Material,
     pub physics_body: PhysicsBody,
     pub children: Vec<Shape>,
-    pub parent: Option<u32>,
+    pub parent: Option<u64>,
 }
 
 pub struct Transform {
@@ -45,8 +49,8 @@ impl Default for Transform {
     }
 }
 
-const VERTEX_ATTRIBS: [wgpu::VertexAttribute; 2] =
-    wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x4];
+const VERTEX_ATTRIBS: [wgpu::VertexAttribute; 3] =
+    wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x4, 2 => Uint32];
 
 #[derive(Default)]
 pub struct Mesh {
@@ -62,7 +66,7 @@ impl Mesh {
 
     pub fn vertex_layout() -> VertexBufferLayout<'static> {
         VertexBufferLayout {
-            array_stride: (7 * std::mem::size_of::<f32>()) as BufferAddress,
+            array_stride: (8 * std::mem::size_of::<f32>()) as BufferAddress,
             step_mode: VertexStepMode::Vertex,
             attributes: &VERTEX_ATTRIBS,
         }
@@ -73,12 +77,15 @@ impl Mesh {
         device: &wgpu::Device,
         position: &glm::Vec3,
         color: &glm::Vec4,
+        id: u64,
     ) {
         if self.vertices.is_empty() {
             self.vertex_buffer = None;
             self.vertex_data.clear();
             return;
         }
+
+        debug_assert!(id <= u32::MAX as u64);
 
         let mut raw: Vec<f32> = Vec::with_capacity(self.vertices.len() * 7);
         for v in &self.vertices {
@@ -90,6 +97,7 @@ impl Mesh {
                 color.y,
                 color.z,
                 color.w,
+                f32::from_bits(id as u32),
             ]);
         }
         self.vertex_data = bytemuck::cast_slice(&raw).to_vec();
@@ -147,6 +155,7 @@ impl PhysicsBody {
 impl Shape {
     fn new(name: String, position: glm::Vec3, color: glm::Vec4) -> Self {
         Self {
+            id: NEXT_ID.fetch_add(1, Ordering::Relaxed),
             name,
             transform: Transform {
                 position,
@@ -204,7 +213,7 @@ impl Shape {
         self.children.push(child);
     }
 
-    fn removeChild(&mut self, child_id: u32) -> Option<Shape> {
+    fn removeChild(&mut self, child_id: u64) -> Option<Shape> {
         let index = self
             .children
             .iter()

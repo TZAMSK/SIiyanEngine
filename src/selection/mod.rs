@@ -12,6 +12,8 @@ pub enum PlacementMode {
 pub struct SelectionState {
     pub placement_mode: PlacementMode,
     show_selection_window: bool,
+    hovered_shape_id: u32,
+    selected_shape_id: u32,
 }
 
 impl SelectionState {
@@ -19,7 +21,13 @@ impl SelectionState {
         Self {
             placement_mode: PlacementMode::None,
             show_selection_window: false,
+            hovered_shape_id: 0,
+            selected_shape_id: 0,
         }
+    }
+
+    pub fn set_selected_shape_id(&mut self, id: u32) {
+        self.selected_shape_id = id
     }
 
     pub fn disarm_placement(&mut self) {
