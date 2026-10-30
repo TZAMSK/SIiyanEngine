@@ -21,7 +21,7 @@ pub struct Application {
     scene: Option<Scene>,
     window: Option<Arc<Window>>,
     renderer: Option<Renderer>,
-    state: AppState,
+    state: Option<AppState>,
     pub ui: Option<UIManager>,
     camera: Option<CameraManager>,
     input: Input,
@@ -43,7 +43,7 @@ impl Application {
             scene: Some(scene),
             window: None,
             renderer: None,
-            state: AppState::default(),
+            state: None,
             ui: None,
             camera: None,
             input: Input::default(),
@@ -62,6 +62,8 @@ impl Application {
             window.inner_size().height,
         );
 
+        let state = AppState::new(&renderer.device);
+
         renderer.build_pipeline(&camera);
 
         let ui = UIManager::new(
@@ -71,20 +73,22 @@ impl Application {
             renderer.viewport_view(),
         );
 
+        self.state = Some(state);
         self.renderer = Some(renderer);
         self.window = Some(window);
-
         self.camera = Some(camera);
-
         self.ui = Some(ui);
 
         Ok(())
     }
 
     pub fn on_viewport_clicked(scene: &mut Scene, state: &mut AppState, world_point: &glm::Vec3) {
-        scene.add_shape(&state.selection, world_point);
+        if let Some(selection) = state.selection.as_mut() {
+            scene.add_shape(selection, world_point);
+            selection.disarm_placement();
+        }
+
         state.log_shape_added(&world_point);
-        state.selection.disarm_placement();
     }
 }
 
@@ -103,11 +107,12 @@ impl ApplicationHandler for Application {
         _window_id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
-        if let (Some(window), Some(renderer), Some(ui), Some(camera)) = (
+        if let (Some(window), Some(renderer), Some(ui), Some(camera), Some(state)) = (
             self.window.as_ref(),
             self.renderer.as_mut(),
             self.ui.as_mut(),
             self.camera.as_mut(),
+            self.state.as_mut(),
         ) {
             let consumed = ui.handle_event(window, &event);
 
@@ -128,59 +133,67 @@ impl ApplicationHandler for Application {
                     renderer.resize(size.width, size.height);
                 }
                 winit::event::WindowEvent::RedrawRequested => {
-                    self.state.update();
+                    state.update();
 
-                    let (w, h) = (self.state.viewport.width, self.state.viewport.height);
+                    let (w, h) = (state.viewport.width, state.viewport.height);
                     if w > 0 && h > 0 && (w, h) != renderer.viewport_size() {
                         renderer.resize_viewport(w, h);
                         camera.camera.set_aspect(w as f32 / h as f32);
                         ui.update_viewport_texture(&renderer.device, renderer.viewport_view());
                     }
 
-                    self.input.update_drag(self.state.viewport.hovered);
+                    self.input.update_drag(state.viewport.hovered);
                     if self.input.drag() == Drag::Orbit {
                         camera.camera.move_camera(self.input.mouse_delta(), 0.25);
                     }
 
-                    if self.state.viewport.hovered {
+                    if state.viewport.hovered {
                         camera.camera.zoom_camera(self.input.scroll());
 
-                        if self.state.viewport.clicked {
-                            if self.state.selection.placement_mode == PlacementMode::None {
-                                let mp = self.input.mouse_pos();
-                                let lx = mp.x - self.state.viewport.position.x;
-                                let ly = mp.y - self.state.viewport.position.y;
+                        if let Some(selection) = state.selection.as_mut() {
+                            if state.viewport.clicked {
+                                if selection.placement_mode == PlacementMode::None {
+                                    let mp = self.input.mouse_pos();
+                                    let lx = mp.x - state.viewport.position.x;
+                                    let ly = mp.y - state.viewport.position.y;
 
-                                if lx >= 0.0 && ly >= 0.0 {
-                                    let id = renderer.pick(lx as u32, ly as u32);
-                                    self.state.selection.set_selected_shape_id(id);
-                                    if id != 0 {
-                                        self.state.console.append(&format!("Selected shape {id}"));
+                                    if lx >= 0.0 && ly >= 0.0 {
+                                        let id = selection.picker.pick(
+                                            &renderer.device,
+                                            &renderer.queue,
+                                            &renderer.viewport.id_texture,
+                                            renderer.viewport_size(),
+                                            lx as u32,
+                                            ly as u32,
+                                        );
+                                        selection.picker.set_selected_shape_id(id);
+                                        if id != 0 {
+                                            state.console.append(&format!("Selected shape {id}"));
+                                        }
                                     }
-                                }
-                            } else if let Some(p) = input::mouse_local_to_world_space(
-                                &self.state.viewport,
-                                &camera.camera,
-                                self.input.mouse_pos().x,
-                                self.input.mouse_pos().y,
-                            ) {
-                                if let Some(scene) = self.scene.as_mut() {
-                                    Self::on_viewport_clicked(scene, &mut self.state, &p);
-                                    renderer.sync_shapes(&mut scene.shapes);
+                                } else if let Some(p) = input::mouse_local_to_world_space(
+                                    &state.viewport,
+                                    &camera.camera,
+                                    self.input.mouse_pos().x,
+                                    self.input.mouse_pos().y,
+                                ) {
+                                    if let Some(scene) = self.scene.as_mut() {
+                                        Self::on_viewport_clicked(scene, state, &p);
+                                        renderer.sync_shapes(&mut scene.shapes);
+                                    }
                                 }
                             }
                         }
                     }
-
                     camera.update(&renderer.queue);
                     self.input.end_frame();
 
-                    self.state.camera.position = camera.camera.position().into();
-                    self.state.camera.target = camera.camera.target().into();
+                    state.camera.position = camera.camera.position().into();
+                    state.camera.target = camera.camera.target().into();
 
                     match renderer.render(
                         ui,
-                        &mut self.state,
+                        state,
                         window,
                         &self.scene.as_ref().unwrap().shapes,
                         camera,

@@ -1,9 +1,9 @@
 use wgpu::{
-    BlendState, ColorTargetState, ColorWrites, CompareFunction, DepthBiasState, Device,
-    FragmentState, FrontFace, MultisampleState, PipelineCompilationOptions,
-    PipelineLayoutDescriptor, PolygonMode, PrimitiveState, PrimitiveTopology, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, StencilState, TextureFormat,
-    VertexBufferLayout, VertexState,
+    ColorTargetState, ColorWrites, CompareFunction, DepthBiasState, Device, FragmentState,
+    FrontFace, MultisampleState, PipelineCompilationOptions, PipelineLayoutDescriptor, PolygonMode,
+    PrimitiveState, PrimitiveTopology, RenderPipeline, RenderPipelineDescriptor,
+    ShaderModuleDescriptor, ShaderSource, StencilState, TextureFormat, VertexBufferLayout,
+    VertexState,
 };
 
 pub struct RenderPipelineBuilder<'a> {

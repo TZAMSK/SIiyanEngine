@@ -5,8 +5,8 @@ mod viewport_renderer;
 use std::sync::Arc;
 
 use wgpu::{
-    hal::SurfaceError, Buffer, Color, CommandEncoderDescriptor, Device, DeviceDescriptor, Instance,
-    LoadOp, Operations, PowerPreference, PresentMode, Queue, RenderPassColorAttachment,
+    hal::SurfaceError, Color, CommandEncoderDescriptor, Device, DeviceDescriptor, Instance, LoadOp,
+    Operations, PowerPreference, PresentMode, Queue, RenderPassColorAttachment,
     RenderPassDescriptor, RenderPipeline, RequestAdapterOptions, StoreOp, Surface,
     SurfaceColorSpace, SurfaceConfiguration, TextureFormat, TextureUsages, TextureViewDescriptor,
 };
@@ -31,10 +31,9 @@ pub struct Renderer {
     pub queue: Queue,
     pub config: SurfaceConfiguration,
     pipeline: Option<RenderPipeline>,
-    viewport: ViewportRenderer,
+    pub viewport: ViewportRenderer,
     grid_pipeline: Option<RenderPipeline>,
     grid: GridAxisRenderer,
-    pick_buffer: Buffer,
 }
 
 fn upload_shapes(shapes: &mut [Shape], device: &Device, queue: &Queue) {
@@ -102,13 +101,6 @@ impl Renderer {
 
         let grid = GridAxisRenderer::new(&device);
 
-        let pick_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Readback selection buffer"),
-            size: 256,
-            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-            mapped_at_creation: false,
-        });
-
         Ok(Self {
             surface,
             device,
@@ -118,7 +110,6 @@ impl Renderer {
             viewport,
             grid_pipeline: None,
             grid,
-            pick_buffer,
         })
     }
 
@@ -272,66 +263,6 @@ impl Renderer {
                 .build()
                 .expect("Couldn't create grid_pipeline"),
         );
-    }
-
-    pub fn pick(&self, x: u32, y: u32) -> u32 {
-        let (w, h) = self.viewport_size();
-        if x >= w || y >= h {
-            return 0;
-        }
-
-        let mut encoder = self
-            .device
-            .create_command_encoder(&CommandEncoderDescriptor {
-                label: Some("Pick encoder"),
-            });
-
-        encoder.copy_texture_to_buffer(
-            wgpu::TexelCopyTextureInfo {
-                texture: &self.viewport.id_texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d { x, y, z: 0 },
-                aspect: wgpu::TextureAspect::All,
-            },
-            wgpu::TexelCopyBufferInfo {
-                buffer: &self.pick_buffer,
-                layout: wgpu::TexelCopyBufferLayout {
-                    offset: 0,
-                    bytes_per_row: Some(256),
-                    rows_per_image: Some(1),
-                },
-            },
-            wgpu::Extent3d {
-                width: 1,
-                height: 1,
-                depth_or_array_layers: 1,
-            },
-        );
-
-        self.queue.submit(Some(encoder.finish()));
-
-        let slice = self.pick_buffer.slice(..);
-        let (tx, rx) = std::sync::mpsc::channel();
-        slice.map_async(wgpu::MapMode::Read, move |r| {
-            let _ = tx.send(r);
-        });
-
-        let _ = self.device.poll(wgpu::PollType::wait_indefinitely());
-
-        if !matches!(rx.recv(), Ok(Ok(()))) {
-            return 0;
-        }
-
-        let id = {
-            let Ok(data) = slice.get_mapped_range() else {
-                self.pick_buffer.unmap();
-                return 0;
-            };
-            u32::from_ne_bytes(data[0..4].try_into().unwrap())
-        };
-
-        self.pick_buffer.unmap();
-        id
     }
 
     pub fn sync_shapes(&mut self, shapes: &mut [Shape]) {

@@ -1,3 +1,7 @@
+use crate::selection::picker::Picker;
+
+pub mod picker;
+
 #[derive(Debug, PartialEq)]
 pub enum PlacementMode {
     None,
@@ -12,22 +16,18 @@ pub enum PlacementMode {
 pub struct SelectionState {
     pub placement_mode: PlacementMode,
     show_selection_window: bool,
-    hovered_shape_id: u32,
-    selected_shape_id: u32,
+    pub picker: Picker,
 }
 
 impl SelectionState {
-    pub fn new() -> Self {
+    pub fn new(device: &wgpu::Device) -> Self {
+        let picker = Picker::new(device);
+
         Self {
             placement_mode: PlacementMode::None,
             show_selection_window: false,
-            hovered_shape_id: 0,
-            selected_shape_id: 0,
+            picker,
         }
-    }
-
-    pub fn set_selected_shape_id(&mut self, id: u32) {
-        self.selected_shape_id = id
     }
 
     pub fn disarm_placement(&mut self) {

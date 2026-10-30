@@ -4,7 +4,7 @@ use crate::selection::{PlacementMode, SelectionState};
 pub struct AppState {
     pub viewport: ViewportState,
     pub camera: CameraState,
-    pub selection: SelectionState,
+    pub selection: Option<SelectionState>,
     pub console: Console,
 }
 
@@ -13,25 +13,36 @@ impl Default for AppState {
         Self {
             viewport: ViewportState::default(),
             camera: CameraState::default(),
-            selection: SelectionState::new(),
+            selection: None,
             console: Console::new(),
         }
     }
 }
 
 impl AppState {
+    pub fn new(device: &wgpu::Device) -> Self {
+        let selection = SelectionState::new(device);
+
+        Self {
+            selection: Some(selection),
+            ..Default::default()
+        }
+    }
+
     pub fn update(&mut self) {
         // Update any time-dependent state
     }
 
     pub fn log_shape_added(&mut self, position: &glm::Vec3) {
-        match self.selection.placement_mode {
-            PlacementMode::Triangle => self.console.append_shape_added("Triangle", &position),
-            PlacementMode::Rectangle => self.console.append_shape_added("Rectangle", &position),
-            PlacementMode::Circle => self.console.append_shape_added("Circle", &position),
-            PlacementMode::Cube => self.console.append_shape_added("Cube", &position),
-            PlacementMode::Sphere => self.console.append_shape_added("Sphere", &position),
-            _ => {}
+        if let Some(selection) = &self.selection {
+            match selection.placement_mode {
+                PlacementMode::Triangle => self.console.append_shape_added("Triangle", &position),
+                PlacementMode::Rectangle => self.console.append_shape_added("Rectangle", &position),
+                PlacementMode::Circle => self.console.append_shape_added("Circle", &position),
+                PlacementMode::Cube => self.console.append_shape_added("Cube", &position),
+                PlacementMode::Sphere => self.console.append_shape_added("Sphere", &position),
+                _ => {}
+            }
         }
     }
 }
