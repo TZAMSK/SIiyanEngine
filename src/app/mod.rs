@@ -13,6 +13,7 @@ use crate::{
     },
     renderer::Renderer,
     scene::{camera::CameraManager, shape::three_dimensions::cube::Cube, Scene},
+    selection::PlacementMode,
     ui::UIManager,
 };
 
@@ -145,7 +146,19 @@ impl ApplicationHandler for Application {
                         camera.camera.zoom_camera(self.input.scroll());
 
                         if self.state.viewport.clicked {
-                            if let Some(p) = input::mouse_local_to_world_space(
+                            if self.state.selection.placement_mode == PlacementMode::None {
+                                let mp = self.input.mouse_pos();
+                                let lx = mp.x - self.state.viewport.position.x;
+                                let ly = mp.y - self.state.viewport.position.y;
+
+                                if lx >= 0.0 && ly >= 0.0 {
+                                    let id = renderer.pick(lx as u32, ly as u32);
+                                    self.state.selection.set_selected_shape_id(id);
+                                    if id != 0 {
+                                        self.state.console.append(&format!("Selected shape {id}"));
+                                    }
+                                }
+                            } else if let Some(p) = input::mouse_local_to_world_space(
                                 &self.state.viewport,
                                 &camera.camera,
                                 self.input.mouse_pos().x,
