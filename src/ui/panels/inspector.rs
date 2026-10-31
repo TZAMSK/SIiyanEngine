@@ -3,28 +3,31 @@ use egui_winit::egui::Color32;
 
 use crate::{
     app::app_state::AppState,
+    scene::{shape::Shape, Scene},
     ui::{dimensions, panels::title_panel},
 };
 
-pub struct InspectorPanel;
+pub struct InspectorPanel {
+    active_tab: u32,
+}
 
 impl InspectorPanel {
     pub fn new() -> Self {
-        Self
+        Self { active_tab: 0 }
     }
 
-    pub fn show(&mut self, ui: &mut egui::Ui, state: &AppState) {
+    pub fn show(&mut self, ui: &mut egui::Ui, state: &AppState, scene: &mut Scene) {
         Panel::right("inspector_panel")
             .resizable(true)
             .default_size(dimensions::RIGHT_PANEL_WIDTH)
             .frame(egui::Frame::new().fill(Color32::from_rgb(15, 15, 15)))
             .show(ui, |ui| {
                 title_panel(ui, "Inspector");
-                self.scene_properties(ui, state);
+                self.scene_properties(ui, state, scene);
             });
     }
 
-    fn scene_properties(&mut self, ui: &mut egui::Ui, state: &AppState) {
+    fn scene_properties(&mut self, ui: &mut egui::Ui, state: &AppState, scene: &mut Scene) {
         egui::Frame::new()
             .inner_margin(egui::Margin::same(8))
             .show(ui, |ui| {
@@ -38,10 +41,103 @@ impl InspectorPanel {
                 ui.label("View mode:");
                 ui.label("Placement mode:");
 
-                ui.label("Selected");
+                let Some(selection) = &state.selection else {
+                    return;
+                };
+
+                let id = selection.picker.selected_shape_id;
+
+                if id == 0 {
+                    ui.label("No shape selected");
+                    return;
+                }
+
+                let Some(shape) = scene.find_shape_by_id_mut(id as u64) else {
+                    ui.label("Shape not found");
+                    return;
+                };
+
+                ui.label(format!("Selected: {:2}", shape.id));
                 ui.separator();
+
+                let available_height = ui.available_height();
+                ui.horizontal_top(|ui| {
+                    ui.spacing_mut().item_spacing.x = 0.0;
+
+                    ui.vertical(|ui| {
+                        ui.spacing_mut().item_spacing.y = 0.0;
+
+                        self.selectable_builder(ui, "C", 0);
+                        self.selectable_builder(ui, "T", 1);
+                        self.selectable_builder(ui, "P", 2);
+                        self.selectable_builder(ui, "R", 3);
+                    });
+
+                    let available_width = ui.available_width();
+
+                    egui::Frame::new()
+                        .fill(Color32::from_rgb(45, 45, 45))
+                        .inner_margin(egui::Margin::same(8))
+                        .show(ui, |ui| {
+                            ui.set_min_size(egui::vec2(
+                                (available_width - 16.0).max(0.0),
+                                (available_height - 16.0).max(0.0),
+                            ));
+
+                            match self.active_tab {
+                                0 => draw_color_tab(ui, shape),
+                                _ => {}
+                            }
+                        });
+                });
             });
     }
+
+    pub fn selectable_builder(&mut self, ui: &mut egui::Ui, tab_name: &str, selection_number: u32) {
+        let selected = self.active_tab == selection_number;
+
+        let color = if selected {
+            Color32::from_rgb(45, 45, 45)
+        } else {
+            Color32::from_rgb(15, 15, 15)
+        };
+
+        if ui
+            .add_sized(
+                [40.0, 40.0],
+                egui::Button::new(tab_name)
+                    .selected(self.active_tab == selection_number)
+                    .fill(color),
+            )
+            .clicked()
+        {
+            self.active_tab = selection_number;
+        }
+    }
+}
+
+fn draw_color_tab(ui: &mut egui::Ui, shape: &mut Shape) {
+    let color = &mut shape.material.color;
+
+    let mut rgba = Color32::from_rgba_unmultiplied(
+        (color.x * 255.0) as u8,
+        (color.y * 255.0) as u8,
+        (color.z * 255.0) as u8,
+        (color.w * 255.0) as u8,
+    );
+
+    ui.vertical(|ui| {
+        ui.label("Color");
+
+        if ui.color_edit_button_srgba(&mut rgba).changed() {
+            shape.material.color = glm::Vec4::new(
+                rgba[0].into(),
+                rgba[1].into(),
+                rgba[2].into(),
+                rgba[3].into(),
+            );
+        }
+    });
 }
 
 fn format_vec3(v: [f32; 3]) -> String {

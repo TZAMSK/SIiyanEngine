@@ -35,4 +35,22 @@ impl Scene {
             _ => {}
         }
     }
+
+    pub fn find_shape_by_id_mut(&mut self, id: u64) -> Option<&mut Shape> {
+        fn find(shapes: &mut [Shape], id: u64) -> Option<&mut Shape> {
+            for shape in shapes.iter_mut() {
+                if shape.id == id {
+                    return Some(shape);
+                }
+
+                if let Some(found) = find(&mut shape.children, id) {
+                    return Some(found);
+                }
+            }
+
+            None
+        }
+
+        find(&mut self.shapes, id)
+    }
 }

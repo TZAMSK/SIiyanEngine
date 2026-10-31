@@ -107,12 +107,13 @@ impl ApplicationHandler for Application {
         _window_id: winit::window::WindowId,
         event: winit::event::WindowEvent,
     ) {
-        if let (Some(window), Some(renderer), Some(ui), Some(camera), Some(state)) = (
+        if let (Some(window), Some(renderer), Some(ui), Some(camera), Some(state), Some(scene)) = (
             self.window.as_ref(),
             self.renderer.as_mut(),
             self.ui.as_mut(),
             self.camera.as_mut(),
             self.state.as_mut(),
+            self.scene.as_mut(),
         ) {
             let consumed = ui.handle_event(window, &event);
 
@@ -177,10 +178,8 @@ impl ApplicationHandler for Application {
                                     self.input.mouse_pos().x,
                                     self.input.mouse_pos().y,
                                 ) {
-                                    if let Some(scene) = self.scene.as_mut() {
-                                        Self::on_viewport_clicked(scene, state, &p);
-                                        renderer.sync_shapes(&mut scene.shapes);
-                                    }
+                                    Self::on_viewport_clicked(scene, state, &p);
+                                    renderer.sync_shapes(&mut scene.shapes);
                                 }
                             }
                         }
@@ -191,13 +190,7 @@ impl ApplicationHandler for Application {
                     state.camera.position = camera.camera.position().into();
                     state.camera.target = camera.camera.target().into();
 
-                    match renderer.render(
-                        ui,
-                        state,
-                        window,
-                        &self.scene.as_ref().unwrap().shapes,
-                        camera,
-                    ) {
+                    match renderer.render(ui, state, window, camera, scene) {
                         Ok(_) => {}
                         Err(SurfaceError::Lost | SurfaceError::Outdated) => {
                             let size = window.inner_size();

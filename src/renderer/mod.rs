@@ -21,6 +21,7 @@ use crate::{
     scene::{
         camera::CameraManager,
         shape::{Mesh, Shape},
+        Scene,
     },
     ui::UIManager,
 };
@@ -130,8 +131,8 @@ impl Renderer {
         ui: &mut UIManager,
         state: &mut AppState,
         window: &Window,
-        shapes: &Vec<Shape>,
         camera: &CameraManager,
+        scene: &mut Scene,
     ) -> Result<(), SurfaceError> {
         let (Some(pipeline), Some(grid_pipeline)) = (&self.pipeline, &self.grid_pipeline) else {
             return Ok(());
@@ -217,7 +218,7 @@ impl Renderer {
             render_pass.set_pipeline(pipeline);
             render_pass.set_bind_group(0, &camera.camera_bind_group, &[]);
 
-            for shape in shapes {
+            for shape in &scene.shapes {
                 if let (Some(buf), num_vertices) =
                     (&shape.mesh.vertex_buffer, &shape.mesh.vertex_count())
                 {
@@ -234,6 +235,7 @@ impl Renderer {
             window,
             &view,
             state,
+            scene,
         );
 
         self.queue.submit(std::iter::once(encoder.finish()));

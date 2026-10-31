@@ -12,7 +12,7 @@ use egui_winit::winit::window::Theme;
 use egui_winit::winit::window::Window;
 use egui_winit::State as EguiWinitState;
 
-use crate::app::app_state::AppState;
+use crate::{app::app_state::AppState, scene::Scene};
 
 pub struct UIManager {
     ctx: Context,
@@ -82,12 +82,12 @@ impl UIManager {
         self.platform.on_window_event(window, event).consumed
     }
 
-    pub fn render_ui(&mut self, ui: &mut egui::Ui, state: &mut AppState) {
+    pub fn render_ui(&mut self, ui: &mut egui::Ui, state: &mut AppState, scene: &mut Scene) {
         self.components.menu_bar.show(ui, state);
         self.components.toolbar.show(ui, state);
         self.components.console.show(ui, state);
         self.components.scene.show(ui, state);
-        self.components.inspector.show(ui, state);
+        self.components.inspector.show(ui, state, scene);
 
         if let Some(texture_id) = self.viewport_texture_id {
             self.components
@@ -104,12 +104,13 @@ impl UIManager {
         window: &Window,
         texture_view: &TextureView,
         state: &mut AppState,
+        scene: &mut Scene,
     ) {
         // Get raw input and run egui
         let input = self.take_input(window);
         let ctx = self.ctx().clone();
         let mut full_output = ctx.run_ui(input, |ui| {
-            self.render_ui(ui, state);
+            self.render_ui(ui, state, scene);
         });
 
         // Handle platform output
