@@ -36,6 +36,10 @@ impl Scene {
         }
     }
 
+    pub fn remove_shape(&mut self, id: u64) {
+        self.shapes.retain(|shape| shape.id != id);
+    }
+
     pub fn find_shape_by_id_mut(&mut self, id: u64) -> Option<&mut Shape> {
         fn find(shapes: &mut [Shape], id: u64) -> Option<&mut Shape> {
             for shape in shapes.iter_mut() {

@@ -1,4 +1,5 @@
 mod dimensions;
+mod menu;
 mod panels;
 
 use egui_wgpu::wgpu::{
@@ -13,7 +14,7 @@ use egui_winit::winit::window::Window;
 use egui_winit::State as EguiWinitState;
 use transform_gizmo_egui::Gizmo;
 
-use crate::scene::camera::{Camera, CameraManager};
+use crate::scene::camera::CameraManager;
 use crate::{app::app_state::AppState, scene::Scene};
 
 pub struct UIManager {
@@ -29,7 +30,8 @@ struct UIComponents {
     inspector: panels::InspectorPanel,
     scene: panels::ScenePanel,
     console: panels::ConsolePanel,
-    menu_bar: panels::MenuPanel,
+    menu_bar: menu::menu_bar::MenuPanel,
+    context_menu: menu::context::ContextMenu,
     toolbar: panels::ToolbarPanel,
 }
 
@@ -72,12 +74,19 @@ impl UIManager {
                 inspector: panels::InspectorPanel::new(),
                 scene: panels::ScenePanel::new(),
                 console: panels::ConsolePanel::new(),
-                menu_bar: panels::MenuPanel::new(),
+                menu_bar: menu::menu_bar::MenuPanel::new(),
                 toolbar: panels::ToolbarPanel::new(),
+                context_menu: menu::context::ContextMenu::new(),
             },
             egui_renderer,
             viewport_texture_id,
         }
+    }
+
+    pub fn open_shape_context_menu(&mut self, id: u32, mouse: glm::Vec2) {
+        self.components
+            .context_menu
+            .open(id, egui::pos2(mouse.x, mouse.y));
     }
 
     pub fn handle_event(&mut self, window: &Window, event: &winit::event::WindowEvent) -> bool {
@@ -97,6 +106,8 @@ impl UIManager {
         self.components.console.show(ui, state);
         self.components.scene.show(ui, state);
         self.components.inspector.show(ui, state, scene);
+
+        self.components.context_menu.show(ui, scene);
 
         if let Some(texture_id) = self.viewport_texture_id {
             return self.components.viewport.show(

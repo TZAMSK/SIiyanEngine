@@ -207,6 +207,33 @@ impl ApplicationHandler for Application {
                     }
                 }
 
+                if let Some(mouse) = self.input.take_right_click() {
+                    let local_x = mouse.x - state.viewport.position.x;
+                    let local_y = mouse.y - state.viewport.position.y;
+
+                    let inside_viewport = local_x >= 0.0
+                        && local_y >= 0.0
+                        && local_x < state.viewport.width as f32
+                        && local_y < state.viewport.height as f32;
+
+                    if inside_viewport {
+                        if let Some(selection) = state.selection.as_mut() {
+                            let id = selection.picker.pick(
+                                &renderer.device,
+                                &renderer.queue,
+                                &renderer.viewport.id_texture,
+                                renderer.viewport_size(),
+                                local_x as u32,
+                                local_y as u32,
+                            );
+
+                            if id != 0 {
+                                ui.open_shape_context_menu(id, mouse);
+                            }
+                        }
+                    }
+                }
+
                 camera.update(&renderer.queue);
 
                 state.camera.position = camera.camera.position().into();

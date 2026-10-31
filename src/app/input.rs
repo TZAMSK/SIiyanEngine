@@ -19,6 +19,7 @@ pub struct Input {
     scroll: f32,
     drag: Drag,
     pending_left_click: Option<glm::Vec2>,
+    pending_right_click: Option<glm::Vec2>,
 }
 
 #[derive(Default, PartialEq, Clone, Copy)]
@@ -73,8 +74,10 @@ impl Input {
                 ElementState::Pressed => {
                     self.buttons.insert(*button);
 
-                    if *button == MouseButton::Left {
-                        self.pending_left_click = Some(self.mouse_pos);
+                    match button {
+                        MouseButton::Left => self.pending_left_click = Some(self.mouse_pos),
+                        MouseButton::Right => self.pending_right_click = Some(self.mouse_pos),
+                        _ => {}
                     }
                 }
                 ElementState::Released => {
@@ -128,6 +131,10 @@ impl Input {
 
     pub fn take_left_click(&mut self) -> Option<glm::Vec2> {
         self.pending_left_click.take()
+    }
+
+    pub fn take_right_click(&mut self) -> Option<glm::Vec2> {
+        self.pending_right_click.take()
     }
 }
 

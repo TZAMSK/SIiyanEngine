@@ -1,6 +1,5 @@
 mod console;
 mod inspector;
-mod menu;
 mod scene;
 mod toolbar;
 mod viewport;
@@ -8,7 +7,6 @@ mod viewport;
 pub use console::ConsolePanel;
 use egui::{vec2, Align2, Color32, FontId, Sense};
 pub use inspector::InspectorPanel;
-pub use menu::MenuPanel;
 pub use scene::ScenePanel;
 pub use toolbar::ToolbarPanel;
 pub use viewport::ViewportPanel;
