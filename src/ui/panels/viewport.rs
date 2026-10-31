@@ -39,15 +39,13 @@ impl ViewportPanel {
                 let ppp = ui.ctx().pixels_per_point();
                 let rect = response.rect;
 
-                state.viewport.width = (size.x * ppp).round() as u32;
-                state.viewport.height = (size.x * ppp).round() as u32;
-                state.viewport.hovered = response.hovered();
-                state.viewport.clicked = response.clicked();
+                state.viewport.width = (rect.width() * ppp).round() as u32;
+                state.viewport.height = (rect.height() * ppp).round() as u32;
+                state.viewport.position = glm::vec2(rect.min.x * ppp, rect.min.y * ppp);
+                state.viewport.rect = [rect.min.x, rect.min.y, rect.max.x, rect.max.y];
 
-                let r = response.rect;
-                state.viewport.position = glm::Vec2::new(r.min.x * ppp, r.min.y * ppp);
-                let r = response.rect;
-                state.viewport.rect = [r.min.x, r.min.y, r.max.x, r.max.y];
+                state.viewport.hovered = response.hovered();
+                state.viewport.clicked = false;
 
                 transform_changed = draw_gizmo(ui, gizmo, scene, state, camera, rect);
             }

@@ -40,13 +40,10 @@ pub struct Renderer {
 
 fn upload_shapes(shapes: &mut [Shape], device: &Device, queue: &Queue) {
     for shape in shapes {
-        if shape.mesh.vertex_buffer.is_none() && !shape.mesh.vertices.is_empty() {
-            shape.mesh.upload_to_gpu(
-                device,
-                &shape.transform.position,
-                &shape.material.color,
-                shape.id,
-            );
+        if !shape.mesh.vertices.is_empty() {
+            shape
+                .mesh
+                .upload_to_gpu(device, &shape.transform, &shape.material.color, shape.id);
 
             if let Some(buffer) = &shape.mesh.vertex_buffer {
                 queue.write_buffer(buffer, 0, &shape.mesh.vertex_data);

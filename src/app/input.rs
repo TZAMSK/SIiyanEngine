@@ -18,6 +18,7 @@ pub struct Input {
     mouse_delta: glm::Vec2,
     scroll: f32,
     drag: Drag,
+    pending_left_click: Option<glm::Vec2>,
 }
 
 #[derive(Default, PartialEq, Clone, Copy)]
@@ -71,6 +72,10 @@ impl Input {
             WindowEvent::MouseInput { state, button, .. } => match state {
                 ElementState::Pressed => {
                     self.buttons.insert(*button);
+
+                    if *button == MouseButton::Left {
+                        self.pending_left_click = Some(self.mouse_pos);
+                    }
                 }
                 ElementState::Released => {
                     self.buttons.remove(button);
@@ -119,6 +124,10 @@ impl Input {
             }
         }
         false
+    }
+
+    pub fn take_left_click(&mut self) -> Option<glm::Vec2> {
+        self.pending_left_click.take()
     }
 }
 

@@ -19,7 +19,7 @@ pub trait ShapeBehavior {
     fn rebuild_mesh(&mut self);
 }
 
-static NEXT_ID: AtomicU64 = AtomicU64::new(0);
+static NEXT_ID: AtomicU64 = AtomicU64::new(1);
 
 #[derive(Default)]
 pub struct Shape {
@@ -75,7 +75,7 @@ impl Mesh {
     pub fn upload_to_gpu(
         &mut self,
         device: &wgpu::Device,
-        position: &glm::Vec3,
+        transform: &Transform,
         color: &glm::Vec4,
         id: u64,
     ) {
@@ -87,12 +87,25 @@ impl Mesh {
 
         debug_assert!(id <= u32::MAX as u64);
 
-        let mut raw: Vec<f32> = Vec::with_capacity(self.vertices.len() * 7);
+        let translation = glm::translation(&transform.position);
+
+        let rotation_x = glm::rotation(transform.rotation.x, &glm::vec3(1.0, 0.0, 0.0));
+        let rotation_y = glm::rotation(transform.rotation.y, &glm::vec3(0.0, 1.0, 0.0));
+        let rotation_z = glm::rotation(transform.rotation.z, &glm::vec3(0.0, 0.0, 1.0));
+
+        let scaling = glm::scaling(&transform.scale);
+
+        let model = translation * rotation_z * rotation_y * rotation_x * scaling;
+
+        let mut raw: Vec<f32> = Vec::with_capacity(self.vertices.len() * 8);
+
         for v in &self.vertices {
+            let position = model * glm::vec4(v.x, v.y, v.z, 1.0);
+
             raw.extend_from_slice(&[
-                v.x + position.x,
-                v.y + position.y,
-                v.z + position.z,
+                position.x,
+                position.y,
+                position.z,
                 color.x,
                 color.y,
                 color.z,
@@ -182,10 +195,10 @@ impl Shape {
     }
 
     pub fn set_rotation(&mut self, rotation: glm::Vec3) {
-        let delta = self.transform.rotation - rotation;
+        let delta = rotation - self.transform.rotation;
         self.transform.rotation = rotation;
 
-        for child in self.children.iter_mut() {
+        for child in &mut self.children {
             if child.physics_body.following_parent {
                 child.set_rotation(child.transform.rotation + delta)
             }
@@ -193,12 +206,21 @@ impl Shape {
     }
 
     pub fn set_scale(&mut self, scale: glm::Vec3) {
-        let ratio = scale.component_div(&self.transform.scale);
+        let old_scale = self.transform.scale;
         self.transform.scale = scale;
 
-        for child in self.children.iter_mut() {
+        if old_scale.x.abs() < f32::EPSILON
+            || old_scale.y.abs() < f32::EPSILON
+            || old_scale.z.abs() < f32::EPSILON
+        {
+            return;
+        }
+
+        let ratio = scale.component_div(&old_scale);
+
+        for child in &mut self.children {
             if child.physics_body.following_parent {
-                child.set_position(child.transform.scale.component_mul(&ratio))
+                child.set_position(child.transform.scale.component_mul(&ratio));
             }
         }
     }
