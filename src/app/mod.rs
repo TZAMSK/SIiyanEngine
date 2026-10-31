@@ -3,6 +3,7 @@ mod input;
 
 use std::sync::Arc;
 
+use transform_gizmo_egui::Gizmo;
 use wgpu::hal::SurfaceError;
 use winit::{application::ApplicationHandler, window::Window};
 
@@ -25,6 +26,7 @@ pub struct Application {
     pub ui: Option<UIManager>,
     camera: Option<CameraManager>,
     input: Input,
+    gizmo: Gizmo,
 }
 
 impl Application {
@@ -47,6 +49,7 @@ impl Application {
             ui: None,
             camera: None,
             input: Input::default(),
+            gizmo: Gizmo::default(),
         }
     }
 
@@ -190,7 +193,7 @@ impl ApplicationHandler for Application {
                     state.camera.position = camera.camera.position().into();
                     state.camera.target = camera.camera.target().into();
 
-                    match renderer.render(ui, state, window, camera, scene) {
+                    match renderer.render(ui, state, window, camera, scene, &mut self.gizmo) {
                         Ok(_) => {}
                         Err(SurfaceError::Lost | SurfaceError::Outdated) => {
                             let size = window.inner_size();

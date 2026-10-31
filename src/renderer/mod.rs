@@ -4,6 +4,7 @@ mod viewport_renderer;
 
 use std::sync::Arc;
 
+use transform_gizmo_egui::Gizmo;
 use wgpu::{
     hal::SurfaceError, Color, CommandEncoderDescriptor, Device, DeviceDescriptor, Instance, LoadOp,
     Operations, PowerPreference, PresentMode, Queue, RenderPassColorAttachment,
@@ -133,6 +134,7 @@ impl Renderer {
         window: &Window,
         camera: &CameraManager,
         scene: &mut Scene,
+        gizmo: &mut Gizmo,
     ) -> Result<(), SurfaceError> {
         let (Some(pipeline), Some(grid_pipeline)) = (&self.pipeline, &self.grid_pipeline) else {
             return Ok(());
@@ -228,7 +230,7 @@ impl Renderer {
             }
         }
 
-        ui.render(
+        let tranform_changed = ui.render(
             &self.device,
             &self.queue,
             &mut encoder,
@@ -236,7 +238,13 @@ impl Renderer {
             &view,
             state,
             scene,
+            camera,
+            gizmo,
         );
+
+        if tranform_changed {
+            self.sync_shapes(&mut scene.shapes);
+        }
 
         self.queue.submit(std::iter::once(encoder.finish()));
         self.queue.present(output);

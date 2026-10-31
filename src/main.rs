@@ -1,4 +1,5 @@
 mod app;
+pub mod editor;
 mod renderer;
 mod scene;
 pub mod selection;

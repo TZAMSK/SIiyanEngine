@@ -86,6 +86,7 @@ impl InspectorPanel {
 
                             match self.active_tab {
                                 0 => draw_color_tab(ui, shape),
+                                1 => draw_transform_tab(ui, shape),
                                 _ => {}
                             }
                         });
@@ -131,12 +132,37 @@ fn draw_color_tab(ui: &mut egui::Ui, shape: &mut Shape) {
 
         if ui.color_edit_button_srgba(&mut rgba).changed() {
             shape.material.color = glm::Vec4::new(
-                rgba[0].into(),
-                rgba[1].into(),
-                rgba[2].into(),
-                rgba[3].into(),
+                rgba.r() as f32 / 255.0,
+                rgba.g() as f32 / 255.0,
+                rgba.b() as f32 / 255.0,
+                rgba.a() as f32 / 255.0,
             );
         }
+    });
+}
+
+fn draw_transform_tab(ui: &mut egui::Ui, shape: &mut Shape) {
+    ui.vertical(|ui| {
+        ui.spacing_mut().item_spacing.y = 8.0;
+
+        draw_vec3(ui, "Position", &mut shape.transform.position, 0.05);
+        draw_vec3(ui, "Rotation", &mut shape.transform.rotation, 0.05);
+        draw_vec3(ui, "Scale", &mut shape.transform.scale, 0.05);
+    });
+}
+
+fn draw_vec3(ui: &mut egui::Ui, label: &str, value: &mut glm::Vec3, speed: f64) {
+    ui.vertical(|ui| {
+        ui.spacing_mut().item_spacing.x = 4.0;
+
+        ui.label(label);
+
+        ui.horizontal(|ui| {
+            for (i, axis) in ["X", "Y", "Z"].iter().enumerate() {
+                ui.label(*axis);
+                ui.add(egui::DragValue::new(&mut value[i]).speed(speed));
+            }
+        });
     });
 }
 

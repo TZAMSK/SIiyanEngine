@@ -11,7 +11,9 @@ use egui_winit::egui::{Context, PlatformOutput, RawInput};
 use egui_winit::winit::window::Theme;
 use egui_winit::winit::window::Window;
 use egui_winit::State as EguiWinitState;
+use transform_gizmo_egui::Gizmo;
 
+use crate::scene::camera::{Camera, CameraManager};
 use crate::{app::app_state::AppState, scene::Scene};
 
 pub struct UIManager {
@@ -82,7 +84,14 @@ impl UIManager {
         self.platform.on_window_event(window, event).consumed
     }
 
-    pub fn render_ui(&mut self, ui: &mut egui::Ui, state: &mut AppState, scene: &mut Scene) {
+    pub fn render_ui(
+        &mut self,
+        ui: &mut egui::Ui,
+        state: &mut AppState,
+        scene: &mut Scene,
+        camera: &CameraManager,
+        gizmo: &mut Gizmo,
+    ) -> bool {
         self.components.menu_bar.show(ui, state);
         self.components.toolbar.show(ui, state);
         self.components.console.show(ui, state);
@@ -90,10 +99,17 @@ impl UIManager {
         self.components.inspector.show(ui, state, scene);
 
         if let Some(texture_id) = self.viewport_texture_id {
-            self.components
-                .viewport
-                .show(ui, Some(texture_id), &mut state.viewport);
+            return self.components.viewport.show(
+                ui,
+                Some(texture_id),
+                state,
+                scene,
+                camera,
+                gizmo,
+            );
         }
+
+        false
     }
 
     pub fn render(
@@ -105,12 +121,17 @@ impl UIManager {
         texture_view: &TextureView,
         state: &mut AppState,
         scene: &mut Scene,
-    ) {
+        camera: &CameraManager,
+        gizmo: &mut Gizmo,
+    ) -> bool {
         // Get raw input and run egui
         let input = self.take_input(window);
         let ctx = self.ctx().clone();
+
+        let mut transform_changed = false;
+
         let mut full_output = ctx.run_ui(input, |ui| {
-            self.render_ui(ui, state, scene);
+            transform_changed = self.render_ui(ui, state, scene, camera, gizmo);
         });
 
         // Handle platform output
@@ -158,6 +179,8 @@ impl UIManager {
         // Render the UI
         self.egui_renderer
             .render(render_pass_static, &paint_jobs, &screen_descriptor);
+
+        transform_changed
     }
 
     pub fn handle_platform_output(&mut self, window: &Window, platform_output: PlatformOutput) {

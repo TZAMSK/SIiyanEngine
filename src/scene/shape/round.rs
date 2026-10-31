@@ -1,6 +1,6 @@
 pub trait Round {
-    fn setRadius(&mut self);
-    fn setSegments(&mut self);
+    fn set_radius(&mut self);
+    fn set_segments(&mut self);
 }
 
 pub struct RoundProperties {

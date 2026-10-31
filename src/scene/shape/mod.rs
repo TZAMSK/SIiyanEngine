@@ -19,7 +19,7 @@ pub trait ShapeBehavior {
     fn rebuild_mesh(&mut self);
 }
 
-static NEXT_ID: AtomicU64 = AtomicU64::new(1);
+static NEXT_ID: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Default)]
 pub struct Shape {
@@ -131,7 +131,7 @@ struct PhysicsBody {
 }
 
 impl PhysicsBody {
-    pub fn calculateVolume(&self, mesh: &Mesh) -> f32 {
+    pub fn calculate_volume(&self, mesh: &Mesh) -> f32 {
         let count = mesh.vertex_count();
         let vertices = &mesh.vertices;
         let mut volume = 0.0;
@@ -166,44 +166,44 @@ impl Shape {
         }
     }
 
-    fn isParent(&self) -> bool {
+    fn is_parent(&self) -> bool {
         self.parent.is_some()
     }
 
-    fn setPosition(&mut self, position: glm::Vec3) {
+    pub fn set_position(&mut self, position: glm::Vec3) {
         let delta = position - self.transform.position;
         self.transform.position = position;
 
         for child in self.children.iter_mut() {
             if child.physics_body.following_parent {
-                child.setPosition(child.transform.position + delta)
+                child.set_position(child.transform.position + delta)
             }
         }
     }
 
-    fn setRotation(&mut self, rotation: glm::Vec3) {
+    pub fn set_rotation(&mut self, rotation: glm::Vec3) {
         let delta = self.transform.rotation - rotation;
         self.transform.rotation = rotation;
 
         for child in self.children.iter_mut() {
             if child.physics_body.following_parent {
-                child.setRotation(child.transform.rotation + delta)
+                child.set_rotation(child.transform.rotation + delta)
             }
         }
     }
 
-    fn setScale(&mut self, scale: glm::Vec3) {
+    pub fn set_scale(&mut self, scale: glm::Vec3) {
         let ratio = scale.component_div(&self.transform.scale);
         self.transform.scale = scale;
 
         for child in self.children.iter_mut() {
             if child.physics_body.following_parent {
-                child.setPosition(child.transform.scale.component_mul(&ratio))
+                child.set_position(child.transform.scale.component_mul(&ratio))
             }
         }
     }
 
-    fn addChild(&mut self, mut child: Shape) {
+    fn add_child(&mut self, mut child: Shape) {
         if child.id == self.id {
             return;
         }
@@ -213,7 +213,7 @@ impl Shape {
         self.children.push(child);
     }
 
-    fn removeChild(&mut self, child_id: u64) -> Option<Shape> {
+    fn remove_child(&mut self, child_id: u64) -> Option<Shape> {
         let index = self
             .children
             .iter()
